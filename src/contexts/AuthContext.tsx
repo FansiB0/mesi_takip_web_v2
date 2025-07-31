@@ -1,19 +1,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { User } from '../types';
-
-// Kullanıcı verilerini localStorage'da saklamak için interface
-interface StoredUser extends User {
-  password: string; // Şifre hash'lenmiş olarak saklanacak
-}
-
-// Basit hash fonksiyonu (gerçek uygulamada bcrypt kullanılmalı)
-const hashPassword = (password: string): string => {
-  return btoa(password); // Base64 encoding (basit örnek)
-};
-
-const verifyPassword = (password: string, hashedPassword: string): boolean => {
-  return btoa(password) === hashedPassword;
-};
+import { loginUser, registerUser, logoutUser, onAuthStateChange, getCurrentUser } from '../services/authService';
+import { User as FirebaseUser } from 'firebase/auth';
 
 interface AuthContextType {
   user: User | null;
@@ -39,47 +27,32 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    // Sayfa yüklendiğinde localStorage'dan kullanıcı bilgisini al
-    const storedUser = localStorage.getItem('user');
-    if (storedUser) {
-      try {
-        const userData = JSON.parse(storedUser);
+    // Firebase auth state listener
+    const unsubscribe = onAuthStateChange((firebaseUser: FirebaseUser | null) => {
+      if (firebaseUser) {
+        // Firebase user'ı bizim User tipine dönüştür
+        const userData: User = {
+          id: firebaseUser.uid,
+          name: firebaseUser.displayName || firebaseUser.email?.split('@')[0] || 'Kullanıcı',
+          email: firebaseUser.email || '',
+          startDate: new Date().toISOString().split('T')[0], // Varsayılan tarih
+          employeeType: 'normal'
+        };
         setUser(userData);
-      } catch (error) {
-        console.error('Stored user data is invalid:', error);
-        localStorage.removeItem('user');
+      } else {
+        setUser(null);
       }
-    }
-    setIsLoading(false);
+      setIsLoading(false);
+    });
+
+    return () => unsubscribe();
   }, []);
 
   const login = async (email: string, password: string): Promise<{ success: boolean; error?: string }> => {
     setIsLoading(true);
     try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 500));
-      
-      // Kullanıcıları localStorage'dan al
-      const storedUsers = localStorage.getItem('users');
-      const users: StoredUser[] = storedUsers ? JSON.parse(storedUsers) : [];
-      
-      // Email ile kullanıcıyı bul
-      const user = users.find(u => u.email.toLowerCase() === email.toLowerCase());
-      
-      if (!user) {
-        return { success: false, error: 'Kullanıcı bulunamadı' };
-      }
-      
-      // Şifreyi doğrula
-      if (!verifyPassword(password, user.password)) {
-        return { success: false, error: 'Hatalı şifre' };
-      }
-      
-      // Şifreyi çıkar ve kullanıcıyı set et
-      const { password: _, ...userWithoutPassword } = user;
-      setUser(userWithoutPassword);
-      localStorage.setItem('user', JSON.stringify(userWithoutPassword));
-      return { success: true };
+      const result = await loginUser(email, password);
+      return result;
     } catch (error) {
       console.error('Login error:', error);
       return { success: false, error: 'Giriş sırasında bir hata oluştu' };
@@ -91,30 +64,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const register = async (name: string, email: string, password: string, startDate: string): Promise<{ success: boolean; error?: string }> => {
     setIsLoading(true);
     try {
-      await new Promise(resolve => setTimeout(resolve, 500));
-      const storedUsers = localStorage.getItem('users');
-      const users: StoredUser[] = storedUsers ? JSON.parse(storedUsers) : [];
-      const existingUser = users.find(u => u.email.toLowerCase() === email.toLowerCase());
-      if (existingUser) {
-        return { success: false, error: 'Bu email adresi zaten kullanılıyor' };
-      }
       if (password.length < 6) {
         return { success: false, error: 'Şifre en az 6 karakter olmalıdır' };
       }
-      const newUser: StoredUser = {
-        id: Date.now().toString(),
-        name,
-        email: email.toLowerCase(),
-        startDate,
-        employeeType: 'normal',
-        password: hashPassword(password)
-      };
-      users.push(newUser);
-      localStorage.setItem('users', JSON.stringify(users));
-      const { password: _, ...userWithoutPassword } = newUser;
-      setUser(userWithoutPassword);
-      localStorage.setItem('user', JSON.stringify(userWithoutPassword));
-      return { success: true };
+      const result = await registerUser(email, password);
+      return result;
     } catch (error) {
       console.error('Register error:', error);
       return { success: false, error: 'Kayıt sırasında bir hata oluştu' };
@@ -123,26 +77,20 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  const logout = () => {
-    setUser(null);
-    localStorage.removeItem('user');
+  const logout = async () => {
+    try {
+      await logoutUser();
+      setUser(null);
+    } catch (error) {
+      console.error('Logout error:', error);
+    }
   };
 
   const updateUser = async (updates: Partial<Pick<User, 'name' | 'email' | 'startDate'>>) => {
     if (!user) return;
     const updatedUser = { ...user, ...updates };
     setUser(updatedUser);
-    localStorage.setItem('user', JSON.stringify(updatedUser));
-    // users array'inde de güncelle
-    const storedUsers = localStorage.getItem('users');
-    if (storedUsers) {
-      const users: any[] = JSON.parse(storedUsers);
-      const idx = users.findIndex(u => u.id === user.id);
-      if (idx !== -1) {
-        users[idx] = { ...users[idx], ...updates };
-        localStorage.setItem('users', JSON.stringify(users));
-      }
-    }
+    // Firebase'de kullanıcı bilgilerini güncelleme işlemi burada yapılabilir
   };
 
   return (

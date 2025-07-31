@@ -1,6 +1,8 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { Salary, Overtime, Leave, Holiday } from '../types';
 import { turkeyHolidays } from '../utils/turkeyHolidays';
+import { overtimeService, leaveService } from '../services/dataService';
+import { useAuth } from './AuthContext';
 
 interface DataContextType {
   // Salary data
@@ -43,37 +45,52 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [overtimes, setOvertimes] = useState<Overtime[]>([]);
   const [leaves, setLeaves] = useState<Leave[]>([]);
   const [holidays, setHolidays] = useState<Holiday[]>([]);
+  const { user } = useAuth();
 
-  // Load data from localStorage on mount
+  // Load data from Firebase when user changes
   useEffect(() => {
-    const storedSalaries = localStorage.getItem('salaries');
-    const storedOvertimes = localStorage.getItem('overtimes');
-    const storedLeaves = localStorage.getItem('leaves');
-    const storedHolidays = localStorage.getItem('holidays');
-
-    if (storedSalaries) setSalaries(JSON.parse(storedSalaries));
-    if (storedOvertimes) setOvertimes(JSON.parse(storedOvertimes));
-    if (storedLeaves) setLeaves(JSON.parse(storedLeaves));
-    if (storedHolidays) {
-      setHolidays(JSON.parse(storedHolidays));
-    } else {
-      setHolidays(turkeyHolidays.map(h => ({ ...h, id: Date.now().toString() + Math.random().toString(36).slice(2) })));
-      localStorage.setItem('holidays', JSON.stringify(turkeyHolidays.map(h => ({ ...h, id: Date.now().toString() + Math.random().toString(36).slice(2) }))));
+    if (user?.id) {
+      loadData();
     }
-  }, []);
+  }, [user?.id]);
 
-  // Save data to localStorage whenever data changes
+  const loadData = async () => {
+    if (!user?.id) return;
+    
+    try {
+      // Firebase'den mesai verilerini yükle
+      const overtimeData = await overtimeService.getAll(user.id);
+      setOvertimes(overtimeData);
+      
+      // Firebase'den izin verilerini yükle
+      const leaveData = await leaveService.getAll(user.id);
+      setLeaves(leaveData);
+      
+      // Tatil verilerini localStorage'dan yükle (statik veri)
+      const storedHolidays = localStorage.getItem('holidays');
+      if (storedHolidays) {
+        setHolidays(JSON.parse(storedHolidays));
+      } else {
+        const defaultHolidays = turkeyHolidays.map(h => ({ 
+          ...h, 
+          id: Date.now().toString() + Math.random().toString(36).slice(2) 
+        }));
+        setHolidays(defaultHolidays);
+        localStorage.setItem('holidays', JSON.stringify(defaultHolidays));
+      }
+      
+      // Maaş verilerini localStorage'dan yükle (geçici olarak)
+      const storedSalaries = localStorage.getItem('salaries');
+      if (storedSalaries) setSalaries(JSON.parse(storedSalaries));
+    } catch (error) {
+      console.error('Error loading data:', error);
+    }
+  };
+
+  // Save data to localStorage whenever data changes (only for salaries and holidays)
   useEffect(() => {
     localStorage.setItem('salaries', JSON.stringify(salaries));
   }, [salaries]);
-
-  useEffect(() => {
-    localStorage.setItem('overtimes', JSON.stringify(overtimes));
-  }, [overtimes]);
-
-  useEffect(() => {
-    localStorage.setItem('leaves', JSON.stringify(leaves));
-  }, [leaves]);
 
   useEffect(() => {
     localStorage.setItem('holidays', JSON.stringify(holidays));
@@ -98,16 +115,36 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   // Overtime functions
-  const addOvertime = (overtime: Omit<Overtime, 'id'>) => {
-    const newOvertime: Overtime = {
-      ...overtime,
-      id: Date.now().toString()
-    };
-    setOvertimes(prev => [...prev, newOvertime]);
+  const addOvertime = async (overtime: Omit<Overtime, 'id'>) => {
+    if (!user?.id) return;
+    
+    try {
+      const newOvertimeData = {
+        ...overtime,
+        userId: user.id
+      };
+      const id = await overtimeService.add(newOvertimeData);
+      if (id) {
+        const newOvertime: Overtime = {
+          ...overtime,
+          id
+        };
+        setOvertimes(prev => [...prev, newOvertime]);
+      }
+    } catch (error) {
+      console.error('Error adding overtime:', error);
+    }
   };
 
-  const updateOvertime = (id: string, overtime: Partial<Overtime>) => {
-    setOvertimes(prev => prev.map(o => o.id === id ? { ...o, ...overtime } : o));
+  const updateOvertime = async (id: string, overtime: Partial<Overtime>) => {
+    try {
+      const success = await overtimeService.update(id, overtime);
+      if (success) {
+        setOvertimes(prev => prev.map(o => o.id === id ? { ...o, ...overtime } : o));
+      }
+    } catch (error) {
+      console.error('Error updating overtime:', error);
+    }
   };
 
   const deleteOvertime = (id: string) => {
@@ -115,16 +152,36 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   // Leave functions
-  const addLeave = (leave: Omit<Leave, 'id'>) => {
-    const newLeave: Leave = {
-      ...leave,
-      id: Date.now().toString()
-    };
-    setLeaves(prev => [...prev, newLeave]);
+  const addLeave = async (leave: Omit<Leave, 'id'>) => {
+    if (!user?.id) return;
+    
+    try {
+      const newLeaveData = {
+        ...leave,
+        userId: user.id
+      };
+      const id = await leaveService.add(newLeaveData);
+      if (id) {
+        const newLeave: Leave = {
+          ...leave,
+          id
+        };
+        setLeaves(prev => [...prev, newLeave]);
+      }
+    } catch (error) {
+      console.error('Error adding leave:', error);
+    }
   };
 
-  const updateLeave = (id: string, leave: Partial<Leave>) => {
-    setLeaves(prev => prev.map(l => l.id === id ? { ...l, ...leave } : l));
+  const updateLeave = async (id: string, leave: Partial<Leave>) => {
+    try {
+      const success = await leaveService.update(id, leave);
+      if (success) {
+        setLeaves(prev => prev.map(l => l.id === id ? { ...l, ...leave } : l));
+      }
+    } catch (error) {
+      console.error('Error updating leave:', error);
+    }
   };
 
   const deleteLeave = (id: string) => {
