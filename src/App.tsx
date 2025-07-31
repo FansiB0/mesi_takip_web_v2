@@ -16,6 +16,12 @@ import LeaveManagement from './components/Leaves/LeaveManagement';
 import ReportsAnalytics from './components/Reports/ReportsAnalytics';
 import Settings from './components/Settings/Settings';
 import CompensationCalculators from './components/Calculators/CompensationCalculators';
+import { firebase } from './config/firebase';
+
+// Firebase bağlantı testi
+console.log('Firebase app initialized:', firebase);
+console.log('Firebase auth:', firebase.auth);
+console.log('Firebase firestore:', firebase.firestore);
 
 const AuthWrapper: React.FC = () => {
   const [showLogin, setShowLogin] = useState(true);

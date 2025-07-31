@@ -20,4 +20,7 @@ const app = initializeApp(firebaseConfig);
 export const auth = getAuth(app);
 export const db = getFirestore(app);
 
+// Firebase'i global olarak export et (debug için)
+export const firebase = app;
+
 export default app; 
