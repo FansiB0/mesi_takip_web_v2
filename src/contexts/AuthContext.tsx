@@ -1,6 +1,8 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { User } from '../types';
 import { loginUser, registerUser, logoutUser, onAuthStateChange, getCurrentUser } from '../services/authService';
+import { userProfileService } from '../services/userProfileService';
+import { settingsService } from '../services/settingsService';
 import { User as FirebaseUser } from 'firebase/auth';
 
 interface AuthContextType {
@@ -28,17 +30,32 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   useEffect(() => {
     // Firebase auth state listener
-    const unsubscribe = onAuthStateChange((firebaseUser: FirebaseUser | null) => {
+    const unsubscribe = onAuthStateChange(async (firebaseUser: FirebaseUser | null) => {
       if (firebaseUser) {
-        // Firebase user'ı bizim User tipine dönüştür
-        const userData: User = {
-          id: firebaseUser.uid,
-          name: firebaseUser.displayName || firebaseUser.email?.split('@')[0] || 'Kullanıcı',
-          email: firebaseUser.email || '',
-          startDate: new Date().toISOString().split('T')[0], // Varsayılan tarih
-          employeeType: 'normal'
-        };
-        setUser(userData);
+        // Önce Firebase'den kullanıcı profilini al
+        const userProfile = await userProfileService.getProfile(firebaseUser.uid);
+        
+        if (userProfile) {
+          // Profil bilgilerini kullan
+          const userData: User = {
+            id: userProfile.uid,
+            name: userProfile.name,
+            email: userProfile.email,
+            startDate: userProfile.startDate,
+            employeeType: userProfile.employeeType
+          };
+          setUser(userData);
+        } else {
+          // Profil yoksa varsayılan bilgilerle oluştur
+          const userData: User = {
+            id: firebaseUser.uid,
+            name: firebaseUser.displayName || firebaseUser.email?.split('@')[0] || 'Kullanıcı',
+            email: firebaseUser.email || '',
+            startDate: new Date().toISOString().split('T')[0],
+            employeeType: 'normal'
+          };
+          setUser(userData);
+        }
       } else {
         setUser(null);
       }
@@ -68,6 +85,29 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         return { success: false, error: 'Şifre en az 6 karakter olmalıdır' };
       }
       const result = await registerUser(email, password);
+      
+      if (result.success && result.user) {
+        // Kullanıcı kayıt olduktan sonra profil bilgilerini oluştur
+        const profileCreated = await userProfileService.createProfile({
+          uid: result.user.uid,
+          name,
+          email,
+          startDate,
+          employeeType: 'normal'
+        });
+        
+        if (!profileCreated) {
+          console.error('Failed to create user profile');
+        }
+        
+        // Kullanıcı ayarlarını oluştur
+        const settingsCreated = await settingsService.createSettings(result.user.uid);
+        
+        if (!settingsCreated) {
+          console.error('Failed to create user settings');
+        }
+      }
+      
       return result;
     } catch (error) {
       console.error('Register error:', error);

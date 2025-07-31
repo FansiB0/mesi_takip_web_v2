@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { Salary, Overtime, Leave, Holiday } from '../types';
 import { turkeyHolidays } from '../utils/turkeyHolidays';
-import { overtimeService, leaveService } from '../services/dataService';
+import { overtimeService, leaveService, salaryService } from '../services/dataService';
 import { useAuth } from './AuthContext';
 
 interface DataContextType {
@@ -66,6 +66,10 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const leaveData = await leaveService.getAll(user.id);
       setLeaves(leaveData);
       
+      // Firebase'den maaş verilerini yükle
+      const salaryData = await salaryService.getAll(user.id);
+      setSalaries(salaryData);
+      
       // Tatil verilerini localStorage'dan yükle (statik veri)
       const storedHolidays = localStorage.getItem('holidays');
       if (storedHolidays) {
@@ -78,40 +82,59 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setHolidays(defaultHolidays);
         localStorage.setItem('holidays', JSON.stringify(defaultHolidays));
       }
-      
-      // Maaş verilerini localStorage'dan yükle (geçici olarak)
-      const storedSalaries = localStorage.getItem('salaries');
-      if (storedSalaries) setSalaries(JSON.parse(storedSalaries));
     } catch (error) {
       console.error('Error loading data:', error);
     }
   };
 
-  // Save data to localStorage whenever data changes (only for salaries and holidays)
-  useEffect(() => {
-    localStorage.setItem('salaries', JSON.stringify(salaries));
-  }, [salaries]);
-
+  // Save data to localStorage whenever data changes (only for holidays)
   useEffect(() => {
     localStorage.setItem('holidays', JSON.stringify(holidays));
   }, [holidays]);
 
   // Salary functions
-  const addSalary = (salary: Omit<Salary, 'id' | 'createdAt'>) => {
-    const newSalary: Salary = {
-      ...salary,
-      id: Date.now().toString(),
-      createdAt: new Date().toISOString().split('T')[0]
-    };
-    setSalaries(prev => [...prev, newSalary]);
+  const addSalary = async (salary: Omit<Salary, 'id' | 'createdAt'>) => {
+    if (!user?.id) return;
+    
+    try {
+      const newSalaryData = {
+        ...salary,
+        userId: user.id
+      };
+      const id = await salaryService.add(newSalaryData);
+      if (id) {
+        const newSalary: Salary = {
+          ...salary,
+          id,
+          createdAt: new Date().toISOString().split('T')[0]
+        };
+        setSalaries(prev => [...prev, newSalary]);
+      }
+    } catch (error) {
+      console.error('Error adding salary:', error);
+    }
   };
 
-  const updateSalary = (id: string, salary: Partial<Salary>) => {
-    setSalaries(prev => prev.map(s => s.id === id ? { ...s, ...salary } : s));
+  const updateSalary = async (id: string, salary: Partial<Salary>) => {
+    try {
+      const success = await salaryService.update(id, salary);
+      if (success) {
+        setSalaries(prev => prev.map(s => s.id === id ? { ...s, ...salary } : s));
+      }
+    } catch (error) {
+      console.error('Error updating salary:', error);
+    }
   };
 
-  const deleteSalary = (id: string) => {
-    setSalaries(prev => prev.filter(s => s.id !== id));
+  const deleteSalary = async (id: string) => {
+    try {
+      const success = await salaryService.delete(id);
+      if (success) {
+        setSalaries(prev => prev.filter(s => s.id !== id));
+      }
+    } catch (error) {
+      console.error('Error deleting salary:', error);
+    }
   };
 
   // Overtime functions

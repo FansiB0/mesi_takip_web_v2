@@ -219,4 +219,82 @@ export const leaveService = {
       return false;
     }
   }
+};
+
+// Maaş veri tipi
+export interface Salary {
+  id?: string;
+  userId: string;
+  month: string;
+  year: number;
+  grossSalary: number;
+  netSalary: number;
+  bonus: number;
+  besDeduction: number;
+  createdAt?: Timestamp;
+  updatedAt?: Timestamp;
+}
+
+// Maaş işlemleri
+export const salaryService = {
+  // Tüm maaşları getir
+  async getAll(userId: string): Promise<Salary[]> {
+    try {
+      const q = query(
+        collection(db, 'salaries'),
+        where('userId', '==', userId),
+        orderBy('year', 'desc'),
+        orderBy('month', 'desc')
+      );
+      const querySnapshot = await getDocs(q);
+      return querySnapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      })) as Salary[];
+    } catch (error) {
+      console.error('Error getting salaries:', error);
+      return [];
+    }
+  },
+
+  // Maaş ekle
+  async add(salary: Omit<Salary, 'id'>): Promise<string | null> {
+    try {
+      const docRef = await addDoc(collection(db, 'salaries'), {
+        ...salary,
+        createdAt: Timestamp.now(),
+        updatedAt: Timestamp.now()
+      });
+      return docRef.id;
+    } catch (error) {
+      console.error('Error adding salary:', error);
+      return null;
+    }
+  },
+
+  // Maaş güncelle
+  async update(id: string, salary: Partial<Salary>): Promise<boolean> {
+    try {
+      const docRef = doc(db, 'salaries', id);
+      await updateDoc(docRef, {
+        ...salary,
+        updatedAt: Timestamp.now()
+      });
+      return true;
+    } catch (error) {
+      console.error('Error updating salary:', error);
+      return false;
+    }
+  },
+
+  // Maaş sil
+  async delete(id: string): Promise<boolean> {
+    try {
+      await deleteDoc(doc(db, 'salaries', id));
+      return true;
+    } catch (error) {
+      console.error('Error deleting salary:', error);
+      return false;
+    }
+  }
 }; 

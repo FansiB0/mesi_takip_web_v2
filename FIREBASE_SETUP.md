@@ -49,14 +49,39 @@ const firebaseConfig = {
 
 ## 6. Güvenlik Kuralları
 
-Firestore Database > Rules sekmesinde şu kuralları ekleyin:
+Firestore Database > Rules sekmesinde `firestore.rules` dosyasındaki kuralları kopyalayın:
 
 ```javascript
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    // Kullanıcılar sadece kendi verilerini okuyabilir/yazabilir
-    match /{document=**} {
+    // Kullanıcı profilleri - sadece kendi profilini okuyabilir/yazabilir
+    match /userProfiles/{userId} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+    }
+    
+    // Kullanıcı ayarları - sadece kendi ayarlarını okuyabilir/yazabilir
+    match /userSettings/{userId} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+    }
+    
+    // Mesai verileri - sadece kendi verilerini okuyabilir/yazabilir
+    match /overtimes/{document} {
+      allow read, write: if request.auth != null && request.auth.uid == resource.data.userId;
+    }
+    
+    // İzin verileri - sadece kendi verilerini okuyabilir/yazabilir
+    match /leaves/{document} {
+      allow read, write: if request.auth != null && request.auth.uid == resource.data.userId;
+    }
+    
+    // Maaş verileri - sadece kendi verilerini okuyabilir/yazabilir
+    match /salaries/{document} {
+      allow read, write: if request.auth != null && request.auth.uid == resource.data.userId;
+    }
+    
+    // Çalışan verileri - sadece kendi verilerini okuyabilir/yazabilir
+    match /employees/{document} {
       allow read, write: if request.auth != null && request.auth.uid == resource.data.userId;
     }
   }
