@@ -17,7 +17,9 @@ export interface AuthUser {
 // Kullanıcı kaydı
 export const registerUser = async (email: string, password: string, name?: string, startDate?: string) => {
   try {
+    console.log('Attempting Firebase registration...');
     const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+    console.log('Firebase registration successful:', userCredential.user);
     return { success: true, user: userCredential.user };
   } catch (error: any) {
     console.error('Firebase registration error:', error);
@@ -38,7 +40,9 @@ export const registerUser = async (email: string, password: string, name?: strin
 // Kullanıcı girişi
 export const loginUser = async (email: string, password: string) => {
   try {
+    console.log('Attempting Firebase login...');
     const userCredential = await signInWithEmailAndPassword(auth, email, password);
+    console.log('Firebase login successful:', userCredential.user);
     return { success: true, user: userCredential.user };
   } catch (error: any) {
     console.error('Firebase login error:', error);
