@@ -2,14 +2,15 @@ import { initializeApp } from 'firebase/app';
 import { getAuth } from 'firebase/auth';
 import { getFirestore } from 'firebase/firestore';
 
-// Firebase konfigürasyonu - Bu bilgileri Firebase Console'dan alacağız
+// Firebase konfigürasyonu
 const firebaseConfig = {
-  apiKey: "YOUR_API_KEY",
-  authDomain: "YOUR_AUTH_DOMAIN",
-  projectId: "YOUR_PROJECT_ID",
-  storageBucket: "YOUR_STORAGE_BUCKET",
-  messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
-  appId: "YOUR_APP_ID"
+  apiKey: "AIzaSyAwuGiCbhncNHERF9vOV1wV5QiA3RXdgPk",
+  authDomain: "mesi-takip-web-v1.firebaseapp.com",
+  projectId: "mesi-takip-web-v1",
+  storageBucket: "mesi-takip-web-v1.firebasestorage.app",
+  messagingSenderId: "1061767802586",
+  appId: "1:1061767802586:web:edefb08963448c70b2bfe3",
+  measurementId: "G-75T6X9CPSP"
 };
 
 // Firebase'i başlat
