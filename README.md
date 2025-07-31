@@ -94,6 +94,7 @@ http://localhost:5173
 ## 🚀 Canlı Demo
 
 Proje Vercel'de yayınlanmıştır: [Canlı Demo](https://mesai-takip-web.vercel.app)
+ GitHub Pages: https://fansib0.github.io/mesi_takip_web_V1/
 
 ## 📋 Kullanım
 
