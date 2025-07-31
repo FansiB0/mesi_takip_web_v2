@@ -6,6 +6,7 @@ import {
   User 
 } from 'firebase/auth';
 import { auth } from '../config/firebase';
+import { localAuthService } from './localAuthService';
 
 export interface AuthUser {
   uid: string;
@@ -14,11 +15,22 @@ export interface AuthUser {
 }
 
 // Kullanıcı kaydı
-export const registerUser = async (email: string, password: string) => {
+export const registerUser = async (email: string, password: string, name?: string, startDate?: string) => {
   try {
     const userCredential = await createUserWithEmailAndPassword(auth, email, password);
     return { success: true, user: userCredential.user };
   } catch (error: any) {
+    console.error('Firebase registration error:', error);
+    
+    // Firebase bağlantı hatası durumunda localStorage fallback
+    if (error.code === 'auth/network-request-failed' || error.message.includes('ERR_CONNECTION_RESET')) {
+      console.log('Using localStorage fallback for registration');
+      if (name && startDate) {
+        return await localAuthService.registerUser(email, password, name, startDate);
+      }
+      return { success: false, error: 'Firebase bağlantısı kurulamadı. Lütfen internet bağlantınızı kontrol edin.' };
+    }
+    
     return { success: false, error: error.message };
   }
 };
@@ -29,6 +41,14 @@ export const loginUser = async (email: string, password: string) => {
     const userCredential = await signInWithEmailAndPassword(auth, email, password);
     return { success: true, user: userCredential.user };
   } catch (error: any) {
+    console.error('Firebase login error:', error);
+    
+    // Firebase bağlantı hatası durumunda localStorage fallback
+    if (error.code === 'auth/network-request-failed' || error.message.includes('ERR_CONNECTION_RESET')) {
+      console.log('Using localStorage fallback for login');
+      return await localAuthService.loginUser(email, password);
+    }
+    
     return { success: false, error: error.message };
   }
 };

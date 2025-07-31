@@ -84,27 +84,30 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (password.length < 6) {
         return { success: false, error: 'Şifre en az 6 karakter olmalıdır' };
       }
-      const result = await registerUser(email, password);
+      const result = await registerUser(email, password, name, startDate);
       
       if (result.success && result.user) {
-        // Kullanıcı kayıt olduktan sonra profil bilgilerini oluştur
-        const profileCreated = await userProfileService.createProfile({
-          uid: result.user.uid,
-          name,
-          email,
-          startDate,
-          employeeType: 'normal'
-        });
-        
-        if (!profileCreated) {
-          console.error('Failed to create user profile');
-        }
-        
-        // Kullanıcı ayarlarını oluştur
-        const settingsCreated = await settingsService.createSettings(result.user.uid);
-        
-        if (!settingsCreated) {
-          console.error('Failed to create user settings');
+        // Firebase bağlantısı varsa profil ve ayarlar oluştur
+        try {
+          const profileCreated = await userProfileService.createProfile({
+            uid: result.user.uid,
+            name,
+            email,
+            startDate,
+            employeeType: 'normal'
+          });
+          
+          if (!profileCreated) {
+            console.error('Failed to create user profile');
+          }
+          
+          const settingsCreated = await settingsService.createSettings(result.user.uid);
+          
+          if (!settingsCreated) {
+            console.error('Failed to create user settings');
+          }
+        } catch (error) {
+          console.log('Firebase services not available, using localStorage only');
         }
       }
       
