@@ -30,6 +30,7 @@ let app;
 try {
   console.log('🚀 About to call initializeApp...');
   console.log('🚀 initializeApp function:', typeof initializeApp);
+  console.log('🚀 firebaseConfig:', firebaseConfig);
   app = initializeApp(firebaseConfig);
   console.log('✅ Firebase app initialized:', app);
   console.log('✅ App name:', app.name);
