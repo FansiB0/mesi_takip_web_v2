@@ -20,8 +20,14 @@ console.log('⚙️ Firebase config:', firebaseConfig);
 
 // Firebase'i başlat
 console.log('🚀 Initializing Firebase app...');
-const app = initializeApp(firebaseConfig);
-console.log('✅ Firebase app initialized:', app);
+let app;
+try {
+  app = initializeApp(firebaseConfig);
+  console.log('✅ Firebase app initialized:', app);
+} catch (error) {
+  console.error('❌ Firebase app initialization failed:', error);
+  throw error;
+}
 
 // Auth ve Firestore servislerini export et
 console.log('🔐 Initializing Firebase Auth...');
