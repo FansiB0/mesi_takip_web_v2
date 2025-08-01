@@ -22,10 +22,15 @@ console.log('⚙️ Firebase config:', firebaseConfig);
 console.log('🚀 Initializing Firebase app...');
 let app;
 try {
+  console.log('🚀 About to call initializeApp...');
   app = initializeApp(firebaseConfig);
   console.log('✅ Firebase app initialized:', app);
-} catch (error) {
+  console.log('✅ App name:', app.name);
+  console.log('✅ App options:', app.options);
+} catch (error: any) {
   console.error('❌ Firebase app initialization failed:', error);
+  console.error('❌ Error message:', error.message);
+  console.error('❌ Error stack:', error.stack);
   throw error;
 }
 
