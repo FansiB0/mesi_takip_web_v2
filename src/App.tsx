@@ -26,6 +26,23 @@ console.log('Firebase firestore service:', db);
 console.log('Window.firebase available:', (window as any).firebase);
 console.log('Window.firebaseAuth available:', (window as any).firebaseAuth);
 console.log('Window.firebaseDb available:', (window as any).firebaseDb);
+
+// Firebase bağlantısını test et
+const testFirebaseConnection = async () => {
+  try {
+    console.log('🧪 Testing Firebase connection...');
+    const testUser = await auth.signInAnonymously();
+    console.log('✅ Firebase connection test successful:', testUser);
+    await auth.signOut();
+    console.log('✅ Firebase signout test successful');
+  } catch (error) {
+    console.error('❌ Firebase connection test failed:', error);
+  }
+};
+
+// Test'i çalıştır
+testFirebaseConnection();
+
 console.log('=== END FIREBASE TEST ===');
 
 const AuthWrapper: React.FC = () => {
