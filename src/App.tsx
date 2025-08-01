@@ -26,6 +26,8 @@ console.log('Firebase firestore service:', db);
 console.log('Window.firebase available:', (window as any).firebase);
 console.log('Window.firebaseAuth available:', (window as any).firebaseAuth);
 console.log('Window.firebaseDb available:', (window as any).firebaseDb);
+console.log('Window.auth available:', (window as any).auth);
+console.log('Window.db available:', (window as any).db);
 
 // Firebase bağlantısını test et
 const testFirebaseConnection = async () => {
@@ -42,6 +44,12 @@ const testFirebaseConnection = async () => {
 
 // Test'i çalıştır
 testFirebaseConnection();
+
+// Global scope test
+console.log('🔍 Global scope test:');
+console.log('typeof window.firebase:', typeof (window as any).firebase);
+console.log('typeof window.auth:', typeof (window as any).auth);
+console.log('typeof window.db:', typeof (window as any).db);
 
 console.log('=== END FIREBASE TEST ===');
 

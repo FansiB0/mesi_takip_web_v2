@@ -28,6 +28,13 @@ if (typeof window !== 'undefined') {
   (window as any).firebase = app;
   (window as any).firebaseAuth = auth;
   (window as any).firebaseDb = db;
+  (window as any).auth = auth;
+  (window as any).db = db;
+  
+  console.log('🔥 Firebase bound to window object');
+  console.log('window.firebase:', (window as any).firebase);
+  console.log('window.auth:', (window as any).auth);
+  console.log('window.db:', (window as any).db);
 }
 
 export default app; 
