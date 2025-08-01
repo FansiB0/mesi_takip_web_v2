@@ -4,16 +4,16 @@ import { calculateSeverancePay, calculateUnemploymentBenefits, formatCurrency } 
 
 const CompensationCalculators: React.FC = () => {
   const [severanceData, setSeveranceData] = useState({
-    grossSalary: '30000',
-    startDate: '2023-01-15',
+    grossSalary: '',
+    startDate: '',
     endDate: new Date().toISOString().split('T')[0]
   });
 
   const [unemploymentData, setUnemploymentData] = useState({
-    march: '30000',
-    april: '30000',
-    may: '30000',
-    june: '30000'
+    march: '',
+    april: '',
+    may: '',
+    june: ''
   });
 
   const [severanceResult, setSeveranceResult] = useState<any>(null);
@@ -67,7 +67,7 @@ const CompensationCalculators: React.FC = () => {
                 value={severanceData.grossSalary}
                 onChange={(e) => setSeveranceData({ ...severanceData, grossSalary: e.target.value })}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
-                placeholder="30000"
+                placeholder="Brüt maaş tutarını girin"
               />
             </div>
 
@@ -153,7 +153,7 @@ const CompensationCalculators: React.FC = () => {
                   value={unemploymentData.march}
                   onChange={(e) => setUnemploymentData({ ...unemploymentData, march: e.target.value })}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  placeholder="30000"
+                  placeholder="Maaş tutarını girin"
                 />
               </div>
               <div>
@@ -163,7 +163,7 @@ const CompensationCalculators: React.FC = () => {
                   value={unemploymentData.april}
                   onChange={(e) => setUnemploymentData({ ...unemploymentData, april: e.target.value })}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  placeholder="30000"
+                  placeholder="Maaş tutarını girin"
                 />
               </div>
               <div>
@@ -173,7 +173,7 @@ const CompensationCalculators: React.FC = () => {
                   value={unemploymentData.may}
                   onChange={(e) => setUnemploymentData({ ...unemploymentData, may: e.target.value })}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  placeholder="30000"
+                  placeholder="Maaş tutarını girin"
                 />
               </div>
               <div>
@@ -183,7 +183,7 @@ const CompensationCalculators: React.FC = () => {
                   value={unemploymentData.june}
                   onChange={(e) => setUnemploymentData({ ...unemploymentData, june: e.target.value })}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  placeholder="30000"
+                  placeholder="Maaş tutarını girin"
                 />
               </div>
             </div>

@@ -67,11 +67,34 @@ export const userProfileService = {
   async updateProfile(uid: string, updates: Partial<UserProfile>): Promise<boolean> {
     try {
       const docRef = doc(db, 'userProfiles', uid);
-      await updateDoc(docRef, {
-        ...updates,
-        updatedAt: Timestamp.now()
-      });
-      return true;
+      const docSnap = await getDoc(docRef);
+      
+      if (docSnap.exists()) {
+        // Profil varsa güncelle
+        await updateDoc(docRef, {
+          ...updates,
+          updatedAt: Timestamp.now()
+        });
+        console.log('✅ User profile updated successfully');
+        return true;
+      } else {
+        // Profil yoksa oluştur
+        console.log('⚠️ User profile not found, creating new profile');
+        const newProfile = {
+          uid,
+          name: updates.name || 'Kullanıcı',
+          email: updates.email || '',
+          startDate: updates.startDate || new Date().toISOString().split('T')[0],
+          employeeType: updates.employeeType || 'normal',
+          ...updates,
+          createdAt: Timestamp.now(),
+          updatedAt: Timestamp.now()
+        };
+        
+        await setDoc(docRef, newProfile);
+        console.log('✅ New user profile created successfully');
+        return true;
+      }
     } catch (error) {
       console.error('Error updating user profile:', error);
       return false;

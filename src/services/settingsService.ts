@@ -101,11 +101,31 @@ export const settingsService = {
   async updateSettings(uid: string, updates: Partial<UserSettings>): Promise<boolean> {
     try {
       const docRef = doc(db, 'userSettings', uid);
-      await updateDoc(docRef, {
-        ...updates,
-        updatedAt: Timestamp.now()
-      });
-      return true;
+      const docSnap = await getDoc(docRef);
+      
+      if (docSnap.exists()) {
+        // Ayarlar varsa güncelle
+        await updateDoc(docRef, {
+          ...updates,
+          updatedAt: Timestamp.now()
+        });
+        console.log('✅ User settings updated successfully');
+        return true;
+      } else {
+        // Ayarlar yoksa oluştur
+        console.log('⚠️ User settings not found, creating new settings');
+        const newSettings = {
+          uid,
+          ...defaultSettings,
+          ...updates,
+          createdAt: Timestamp.now(),
+          updatedAt: Timestamp.now()
+        };
+        
+        await setDoc(docRef, newSettings);
+        console.log('✅ New user settings created successfully');
+        return true;
+      }
     } catch (error) {
       console.error('Error updating user settings:', error);
       return false;

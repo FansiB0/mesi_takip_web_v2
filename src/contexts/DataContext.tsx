@@ -58,16 +58,21 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     if (!user?.id) return;
     
     try {
+      console.log('🔄 Loading data for user:', user.id);
+      
       // Firebase'den mesai verilerini yükle
       const overtimeData = await overtimeService.getAll(user.id);
+      console.log('✅ Overtime data loaded:', overtimeData.length, 'records');
       setOvertimes(overtimeData);
       
       // Firebase'den izin verilerini yükle
       const leaveData = await leaveService.getAll(user.id);
+      console.log('✅ Leave data loaded:', leaveData.length, 'records');
       setLeaves(leaveData);
       
       // Firebase'den maaş verilerini yükle
       const salaryData = await salaryService.getAll(user.id);
+      console.log('✅ Salary data loaded:', salaryData.length, 'records');
       setSalaries(salaryData);
       
       // Tatil verilerini localStorage'dan yükle (statik veri)
@@ -142,6 +147,9 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     if (!user?.id) return;
     
     try {
+      console.log('🔄 Adding overtime for user:', user.id);
+      console.log('📝 Overtime data:', overtime);
+      
       const newOvertimeData = {
         ...overtime,
         userId: user.id
@@ -150,8 +158,10 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (id) {
         const newOvertime: Overtime = {
           ...overtime,
-          id
+          id,
+          userId: user.id
         };
+        console.log('✅ Overtime added successfully:', newOvertime);
         setOvertimes(prev => [...prev, newOvertime]);
       }
     } catch (error) {

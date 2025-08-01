@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useMemo } from 'react';
 import { DollarSign, Clock, Calendar, TrendingUp } from 'lucide-react';
 import StatsCard from './StatsCard';
 import { useData } from '../../contexts/DataContext';
@@ -7,9 +7,44 @@ import { useSettings } from '../../contexts/SettingsContext';
 import { formatCurrency } from '../../utils/calculations';
 
 const Dashboard: React.FC = () => {
-  const { settings } = useSettings();
+  const { settings, showSalarySetupPrompt, dismissSalarySetupPrompt } = useSettings();
   const { user } = useAuth();
   const { salaries, overtimes, leaves, holidays } = useData();
+
+  // Dashboard verilerini güncellemek için useEffect
+  useEffect(() => {
+    console.log('🔄 Dashboard data updated:');
+    console.log('📊 Salaries:', salaries.length);
+    console.log('📊 Overtimes:', overtimes.length);
+    console.log('📊 Leaves:', leaves.length);
+    console.log('📊 User ID:', user?.id);
+    
+    // Kullanıcı verilerini filtrele
+    const userSalaries = salaries.filter(salary => salary.userId === user?.id);
+    const userOvertimes = overtimes.filter(overtime => overtime.userId === user?.id);
+    const userLeaves = leaves.filter(leave => leave.userId === user?.id);
+    
+    console.log('📊 User Salaries:', userSalaries.length);
+    console.log('📊 User Overtimes:', userOvertimes.length);
+    console.log('📊 User Leaves:', userLeaves.length);
+    
+    // Mesai verilerini kontrol et
+    if (userOvertimes.length > 0) {
+      const currentMonth = new Date().getMonth();
+      const currentYear = new Date().getFullYear();
+      const currentMonthOvertimes = userOvertimes.filter(overtime => {
+        const overtimeDate = new Date(overtime.date);
+        return overtimeDate.getMonth() === currentMonth && overtimeDate.getFullYear() === currentYear;
+      });
+      
+      console.log('📊 Current Month Overtimes:', currentMonthOvertimes.length);
+      console.log('📊 Overtime Details:', currentMonthOvertimes.map(o => ({
+        date: o.date,
+        hours: o.hours,
+        totalPayment: o.totalPayment
+      })));
+    }
+  }, [salaries, overtimes, leaves, user?.id]);
 
   // Ay numarasını döndüren yardımcı fonksiyon
   const getMonthNumber = (monthName: string) => {
@@ -57,7 +92,7 @@ const Dashboard: React.FC = () => {
       .reduce((sum, leave) => sum + leave.daysUsed, 0);
     
     // 1. TABAN MAAŞ: Settings'teki varsayılan net maaş
-    const baseSalary = parseFloat(settings.salary.defaultNetSalary) || 5000.00;
+    const baseSalary = parseFloat(settings.salary.defaultNetSalary) || 0;
     
     // 2. ÜCRETSİZ İZİN KESİNTİSİ: Raporlar kısmındaki mantık (30 gün üzerinden)
     const dailySalary = baseSalary / 30; // Günlük maaş (30 gün üzerinden)
@@ -89,7 +124,12 @@ const Dashboard: React.FC = () => {
     };
   };
 
-  const currentMonthSalary = calculateCurrentMonthSalary();
+  const currentMonthSalary = useMemo(() => {
+    console.log('🔄 Recalculating current month salary...');
+    console.log('📊 Current overtimes:', userOvertimes.length);
+    console.log('📊 Current leaves:', userLeaves.length);
+    return calculateCurrentMonthSalary();
+  }, [overtimes, leaves, settings.salary.defaultNetSalary, settings.salary.besContribution]);
   
 
   
@@ -108,7 +148,7 @@ const Dashboard: React.FC = () => {
     if (years < 1) return 0;
     
     // Settings'ten alınan yıllık izin hakkı
-    const annualLeaveDays = parseInt(settings.salary.annualLeaveEntitlement) || 14;
+    const annualLeaveDays = parseInt(settings.salary.annualLeaveEntitlement) || 0;
     return years * annualLeaveDays;
   };
 
@@ -174,6 +214,40 @@ const Dashboard: React.FC = () => {
 
   return (
     <div className="space-y-6">
+      {/* Maaş Ayarları Bildirimi */}
+      {showSalarySetupPrompt && (
+        <div className="bg-gradient-to-r from-yellow-400 to-orange-500 rounded-xl shadow-sm p-6 text-white">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center">
+              <div className="bg-white/20 rounded-full p-3 mr-4">
+                <DollarSign className="h-6 w-6 text-white" />
+              </div>
+              <div>
+                <h3 className="text-lg font-semibold">Maaş Ayarlarınızı Tamamlayın</h3>
+                <p className="text-yellow-100">Doğru hesaplamalar için lütfen maaş bilgilerinizi girin</p>
+              </div>
+            </div>
+            <div className="flex space-x-3">
+              <button
+                onClick={() => {
+                  // Ayarlar sayfasına yönlendir
+                  window.location.href = '/mesi_takip_web_V1/#/settings';
+                }}
+                className="px-4 py-2 bg-white text-orange-600 rounded-lg hover:bg-yellow-50 transition-colors font-medium"
+              >
+                Maaş Ayarları
+              </button>
+              <button
+                onClick={dismissSalarySetupPrompt}
+                className="px-4 py-2 bg-white/20 text-white rounded-lg hover:bg-white/30 transition-colors"
+              >
+                Daha Sonra
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Anasayfa</h1>

@@ -131,9 +131,29 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const updateUser = async (updates: Partial<Pick<User, 'name' | 'email' | 'startDate'>>) => {
     if (!user) return;
-    const updatedUser = { ...user, ...updates };
-    setUser(updatedUser);
-    // Firebase'de kullanıcı bilgilerini güncelleme işlemi burada yapılabilir
+    
+    try {
+      console.log('🔄 Updating user profile in Firebase:', updates);
+      
+      // Firebase'de kullanıcı profilini güncelle
+      const success = await userProfileService.updateProfile(user.id, updates);
+      
+      if (success) {
+        console.log('✅ User profile updated in Firebase successfully');
+        const updatedUser = { ...user, ...updates };
+        setUser(updatedUser);
+      } else {
+        console.error('❌ Failed to update user profile in Firebase');
+        // Yine de local state'i güncelle
+        const updatedUser = { ...user, ...updates };
+        setUser(updatedUser);
+      }
+    } catch (error) {
+      console.error('❌ Error updating user profile:', error);
+      // Hata durumunda da local state'i güncelle
+      const updatedUser = { ...user, ...updates };
+      setUser(updatedUser);
+    }
   };
 
   return (

@@ -1,36 +1,129 @@
 import React, { useState } from 'react';
-import { User, Bell, Shield, Calculator, Palette, Globe, Save } from 'lucide-react';
+import { User, Bell, Shield, Calculator, Palette, Globe, Save, Eye, EyeOff } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useToast } from '../../contexts/ToastContext';
 import { useSettings } from '../../contexts/SettingsContext';
+import { securityService } from '../../services/securityService';
 
 const Settings: React.FC = () => {
-  const { user, updateUser } = useAuth();
+  const { user, updateUser, logout } = useAuth();
   const { showToast } = useToast();
-  const { settings, updateSettings, updateAppearance } = useSettings();
+  const { settings, updateSettings, updateAppearance, isNewUser } = useSettings();
   const [activeTab, setActiveTab] = useState('profile');
+  
+  // Güvenlik state'leri
+  const [showPasswordModal, setShowPasswordModal] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [showSessionsModal, setShowSessionsModal] = useState(false);
+  const [currentPassword, setCurrentPassword] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [deletePassword, setDeletePassword] = useState('');
+  const [sessions, setSessions] = useState<any[]>([]);
+  const [showPasswords, setShowPasswords] = useState({ current: false, new: false, confirm: false });
 
   const handleSave = async (section: string) => {
-    if (section === 'profile') {
-      await updateUser({
-        name: settings.profile.name,
-        email: settings.profile.email,
-        startDate: settings.profile.startDate
-      });
-      showToast('Profil ayarları kaydedildi!');
-    } else if (section === 'notifications') {
-      showToast('Bildirim ayarları kaydedildi!');
-    } else if (section === 'salary') {
-      showToast('Maaş ayarları kaydedildi!');
-    } else if (section === 'appearance') {
-      showToast('Görünüm ayarları kaydedildi!');
-    } else {
-      showToast(`${section} ayarları kaydedildi!`);
+    try {
+      if (section === 'profile') {
+        // Profil bilgilerini hem AuthContext'e hem de SettingsContext'e kaydet
+        await updateUser({
+          name: settings.profile.name,
+          email: settings.profile.email,
+          startDate: settings.profile.startDate
+        });
+        
+        // SettingsContext'e de kaydet (diğer profil alanları için)
+        await updateSettings('profile', {
+          phone: settings.profile.phone,
+          department: settings.profile.department,
+          position: settings.profile.position,
+          employeeId: settings.profile.employeeId
+        });
+        
+        showToast('Profil ayarları kaydedildi!');
+      } else if (section === 'notifications') {
+        // updateSettings zaten Firebase'e kaydediyor
+        showToast('Bildirim ayarları kaydedildi!');
+      } else if (section === 'salary') {
+        // updateSettings zaten Firebase'e kaydediyor
+        showToast('Maaş ayarları kaydedildi!');
+      } else if (section === 'appearance') {
+        // updateSettings zaten Firebase'e kaydediyor
+        showToast('Görünüm ayarları kaydedildi!');
+      } else {
+        showToast(`${section} ayarları kaydedildi!`);
+      }
+    } catch (error) {
+      console.error('❌ Error saving settings:', error);
+      showToast('Ayarlar kaydedilirken hata oluştu!');
     }
   };
 
   const handleAppearanceChange = (field: keyof typeof settings.appearance, value: any) => {
     updateAppearance({ [field]: value });
+  };
+
+  // Şifre değiştir
+  const handleChangePassword = async () => {
+    if (newPassword !== confirmPassword) {
+      showToast('Yeni şifreler eşleşmiyor!');
+      return;
+    }
+
+    if (newPassword.length < 6) {
+      showToast('Yeni şifre en az 6 karakter olmalıdır!');
+      return;
+    }
+
+    try {
+      const result = await securityService.changePassword(currentPassword, newPassword);
+      if (result.success) {
+        showToast('Şifre başarıyla değiştirildi!');
+        setShowPasswordModal(false);
+        setCurrentPassword('');
+        setNewPassword('');
+        setConfirmPassword('');
+      } else {
+        showToast(result.error || 'Şifre değiştirilemedi!');
+      }
+    } catch (error) {
+      showToast('Şifre değiştirilirken hata oluştu!');
+    }
+  };
+
+  // Hesabı sil
+  const handleDeleteAccount = async () => {
+    if (!deletePassword) {
+      showToast('Şifrenizi girin!');
+      return;
+    }
+
+    try {
+      const result = await securityService.deleteAccount(deletePassword);
+      if (result.success) {
+        showToast('Hesabınız silindi!');
+        logout();
+      } else {
+        showToast(result.error || 'Hesap silinemedi!');
+      }
+    } catch (error) {
+      showToast('Hesap silinirken hata oluştu!');
+    }
+  };
+
+  // Aktif oturumları getir
+  const handleGetSessions = async () => {
+    try {
+      const result = await securityService.getActiveSessions();
+      if (result.sessions) {
+        setSessions(result.sessions);
+        setShowSessionsModal(true);
+      } else {
+        showToast(result.error || 'Oturum bilgileri alınamadı!');
+      }
+    } catch (error) {
+      showToast('Oturum bilgileri alınırken hata oluştu!');
+    }
   };
 
   const tabs = [
@@ -77,13 +170,13 @@ const Settings: React.FC = () => {
         </div>
         <div>
           <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Telefon</label>
-          <input
-            type="tel"
-            value={settings.profile.phone}
-            onChange={(e) => updateSettings('profile', { phone: e.target.value })}
-            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
-            placeholder="+90 555 123 45 67"
-          />
+                        <input
+                type="tel"
+                value={settings.profile.phone}
+                onChange={(e) => updateSettings('profile', { phone: e.target.value })}
+                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
+                placeholder="Telefon numaranızı girin"
+              />
         </div>
         <div>
           <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Departman</label>
@@ -92,11 +185,16 @@ const Settings: React.FC = () => {
             onChange={(e) => updateSettings('profile', { department: e.target.value })}
             className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
           >
-            <option>Yazılım Geliştirme</option>
-            <option>İnsan Kaynakları</option>
-            <option>Pazarlama</option>
-            <option>Satış</option>
-            <option>Muhasebe</option>
+            <option value="">Departman seçin</option>
+            <option value="Yazılım Geliştirme">Yazılım Geliştirme</option>
+            <option value="İnsan Kaynakları">İnsan Kaynakları</option>
+            <option value="Pazarlama">Pazarlama</option>
+            <option value="Satış">Satış</option>
+            <option value="Muhasebe">Muhasebe</option>
+            <option value="Üretim">Üretim</option>
+            <option value="Kalite Kontrol">Kalite Kontrol</option>
+            <option value="Lojistik">Lojistik</option>
+            <option value="Diğer">Diğer</option>
           </select>
         </div>
         <div>
@@ -222,6 +320,27 @@ const Settings: React.FC = () => {
 
     return (
       <div className="space-y-6">
+        {/* Yeni Kullanıcı Uyarısı */}
+        {isNewUser && settings.salary.defaultNetSalary === '' && (
+          <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4 mb-6">
+            <div className="flex items-start">
+              <div className="flex-shrink-0">
+                <div className="w-6 h-6 bg-blue-600 rounded-full flex items-center justify-center">
+                  <span className="text-white text-sm font-bold">!</span>
+                </div>
+              </div>
+              <div className="ml-3">
+                <h4 className="text-sm font-medium text-blue-900 dark:text-blue-100">
+                  Maaş Bilgilerinizi Girin
+                </h4>
+                <p className="text-sm text-blue-700 dark:text-blue-300 mt-1">
+                  Doğru hesaplamalar için lütfen varsayılan net maaşınızı girin. Bu bilgi mesai ücretleri ve diğer hesaplamalar için kullanılacaktır.
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+
         <div>
           <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Maaş ve Çalışma Ayarları</h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -233,7 +352,7 @@ const Settings: React.FC = () => {
                 value={settings.salary.defaultNetSalary}
                 onChange={(e) => handleNetSalaryChange(e.target.value)}
                 className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
-                placeholder="5000.00"
+                placeholder="Net maaşınızı girin"
               />
               <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Bu değer değiştiğinde saatlik ücret otomatik hesaplanır</p>
             </div>
@@ -386,7 +505,10 @@ const Settings: React.FC = () => {
           <div className="p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
             <h4 className="font-medium text-gray-900 dark:text-white mb-2">Şifre Değiştir</h4>
             <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">Hesabınızın güvenliği için düzenli olarak şifrenizi değiştirin.</p>
-            <button className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+            <button 
+              onClick={() => setShowPasswordModal(true)}
+              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+            >
               Şifre Değiştir
             </button>
           </div>
@@ -402,7 +524,10 @@ const Settings: React.FC = () => {
           <div className="p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
             <h4 className="font-medium text-gray-900 dark:text-white mb-2">Aktif Oturumlar</h4>
             <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">Hesabınıza bağlı aktif oturumları görüntüleyin ve yönetin.</p>
-            <button className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors">
+            <button 
+              onClick={handleGetSessions}
+              className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors"
+            >
               Oturumları Görüntüle
             </button>
           </div>
@@ -410,7 +535,10 @@ const Settings: React.FC = () => {
           <div className="p-4 bg-red-50 dark:bg-red-900/20 rounded-lg border border-red-200 dark:border-red-800">
             <h4 className="font-medium text-red-900 dark:text-red-100 mb-2">Hesabı Sil</h4>
             <p className="text-sm text-red-700 dark:text-red-300 mb-4">Hesabınızı kalıcı olarak silmek istiyorsanız bu işlemi kullanın. Bu işlem geri alınamaz.</p>
-            <button className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors">
+            <button 
+              onClick={() => setShowDeleteModal(true)}
+              className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
+            >
               Hesabı Sil
             </button>
           </div>
@@ -472,6 +600,171 @@ const Settings: React.FC = () => {
           </div>
         </div>
       </div>
+
+      {/* Şifre Değiştirme Modal */}
+      {showPasswordModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white dark:bg-gray-800 rounded-lg p-6 w-full max-w-md">
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Şifre Değiştir</h3>
+            
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Mevcut Şifre</label>
+                <div className="relative">
+                  <input
+                    type={showPasswords.current ? "text" : "password"}
+                    value={currentPassword}
+                    onChange={(e) => setCurrentPassword(e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPasswords({...showPasswords, current: !showPasswords.current})}
+                    className="absolute right-3 top-2.5 text-gray-500 hover:text-gray-700"
+                  >
+                    {showPasswords.current ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  </button>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Yeni Şifre</label>
+                <div className="relative">
+                  <input
+                    type={showPasswords.new ? "text" : "password"}
+                    value={newPassword}
+                    onChange={(e) => setNewPassword(e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPasswords({...showPasswords, new: !showPasswords.new})}
+                    className="absolute right-3 top-2.5 text-gray-500 hover:text-gray-700"
+                  >
+                    {showPasswords.new ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  </button>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Yeni Şifre (Tekrar)</label>
+                <div className="relative">
+                  <input
+                    type={showPasswords.confirm ? "text" : "password"}
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPasswords({...showPasswords, confirm: !showPasswords.confirm})}
+                    className="absolute right-3 top-2.5 text-gray-500 hover:text-gray-700"
+                  >
+                    {showPasswords.confirm ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <div className="flex justify-end space-x-3 mt-6">
+              <button
+                onClick={() => {
+                  setShowPasswordModal(false);
+                  setCurrentPassword('');
+                  setNewPassword('');
+                  setConfirmPassword('');
+                }}
+                className="px-4 py-2 text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200"
+              >
+                İptal
+              </button>
+              <button
+                onClick={handleChangePassword}
+                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+              >
+                Şifreyi Değiştir
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Hesap Silme Modal */}
+      {showDeleteModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white dark:bg-gray-800 rounded-lg p-6 w-full max-w-md">
+            <h3 className="text-lg font-semibold text-red-600 dark:text-red-400 mb-4">Hesabı Sil</h3>
+            <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
+              Bu işlem geri alınamaz. Hesabınızı silmek için şifrenizi girin.
+            </p>
+            
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Şifre</label>
+              <input
+                type="password"
+                value={deletePassword}
+                onChange={(e) => setDeletePassword(e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
+              />
+            </div>
+
+            <div className="flex justify-end space-x-3">
+              <button
+                onClick={() => {
+                  setShowDeleteModal(false);
+                  setDeletePassword('');
+                }}
+                className="px-4 py-2 text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200"
+              >
+                İptal
+              </button>
+              <button
+                onClick={handleDeleteAccount}
+                className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
+              >
+                Hesabı Sil
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Oturumlar Modal */}
+      {showSessionsModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white dark:bg-gray-800 rounded-lg p-6 w-full max-w-2xl">
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Aktif Oturumlar</h3>
+            
+            <div className="space-y-3">
+              {sessions.map((session) => (
+                <div key={session.id} className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                  <div>
+                    <p className="font-medium text-gray-900 dark:text-white">{session.device}</p>
+                    <p className="text-sm text-gray-600 dark:text-gray-400">{session.location}</p>
+                    <p className="text-xs text-gray-500 dark:text-gray-500">
+                      Son aktivite: {new Date(session.lastActive).toLocaleString('tr-TR')}
+                    </p>
+                  </div>
+                  {session.current && (
+                    <span className="px-2 py-1 bg-green-100 text-green-800 text-xs rounded-full">
+                      Mevcut
+                    </span>
+                  )}
+                </div>
+              ))}
+            </div>
+
+            <div className="flex justify-end mt-6">
+              <button
+                onClick={() => setShowSessionsModal(false)}
+                className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors"
+              >
+                Kapat
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
