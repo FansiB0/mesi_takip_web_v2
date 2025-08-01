@@ -2,6 +2,7 @@ import { initializeApp } from 'firebase/app';
 import { getAuth } from 'firebase/auth';
 import { getFirestore } from 'firebase/firestore';
 
+console.log('🔍 Testing Firebase imports...');
 console.log('📦 Firebase modules loaded:', { initializeApp, getAuth, getFirestore });
 
 // Firebase konfigürasyonu
