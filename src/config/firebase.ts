@@ -23,4 +23,11 @@ export const db = getFirestore(app);
 // Firebase'i global olarak export et (debug için)
 export const firebase = app;
 
+// Global window object'e bağla
+if (typeof window !== 'undefined') {
+  (window as any).firebase = app;
+  (window as any).firebaseAuth = auth;
+  (window as any).firebaseDb = db;
+}
+
 export default app; 
