@@ -1,5 +1,5 @@
 import { initializeApp } from 'firebase/app';
-import { getAuth } from 'firebase/auth';
+import { getAuth, signInAnonymously, signOut } from 'firebase/auth';
 import { getFirestore } from 'firebase/firestore';
 
 console.log('🔍 Testing Firebase imports...');
@@ -48,9 +48,12 @@ console.log('✅ Firestore initialized:', db);
 // Firebase'i global olarak export et (debug için)
 export const firebase = app;
 
-// Global window object'e bağla
-console.log('🌐 Binding Firebase to window object...');
-if (typeof window !== 'undefined') {
+// Auth fonksiyonlarını export et
+export { signInAnonymously, signOut };
+
+// Global window object'e bağla (sadece development ortamında)
+if (import.meta.env.DEV && typeof window !== 'undefined') {
+  console.log('🌐 Binding Firebase to window object...');
   try {
     (window as any).firebase = app;
     (window as any).firebaseAuth = auth;
@@ -67,7 +70,7 @@ if (typeof window !== 'undefined') {
   } catch (error) {
     console.error('❌ Error binding Firebase to window:', error);
   }
-} else {
+} else if (import.meta.env.DEV) {
   console.log('⚠️ Window object not available (server-side)');
 }
 

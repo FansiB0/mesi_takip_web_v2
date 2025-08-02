@@ -4,9 +4,13 @@ import StatsCard from './StatsCard';
 import { useData } from '../../contexts/DataContext';
 import { useAuth } from '../../contexts/AuthContext';
 import { useSettings } from '../../contexts/SettingsContext';
-import { formatCurrency } from '../../utils/calculations';
+import { formatCurrency, calculateGrossSalary } from '../../utils/calculations';
 
-const Dashboard: React.FC = () => {
+interface DashboardProps {
+  onNavigateToSettings: () => void;
+}
+
+const Dashboard: React.FC<DashboardProps> = ({ onNavigateToSettings }) => {
   const { settings, showSalarySetupPrompt, dismissSalarySetupPrompt } = useSettings();
   const { user } = useAuth();
   const { salaries, overtimes, leaves, holidays } = useData();
@@ -70,13 +74,31 @@ const Dashboard: React.FC = () => {
     const currentMonth = currentDate.getMonth();
     const currentYear = currentDate.getFullYear();
     
+    console.log('🔍 Calculating for month:', currentMonth, 'year:', currentYear);
+    
     // Bu ay için girilen fazla mesailer
     const currentMonthOvertimes = userOvertimes.filter(overtime => {
       const overtimeDate = new Date(overtime.date);
-      return overtimeDate.getMonth() === currentMonth && overtimeDate.getFullYear() === currentYear;
+      const isCurrentMonth = overtimeDate.getMonth() === currentMonth && overtimeDate.getFullYear() === currentYear;
+      console.log('🔍 Overtime:', overtime.date, 'isCurrentMonth:', isCurrentMonth);
+      return isCurrentMonth;
     });
     
-    const totalOvertimePay = currentMonthOvertimes.reduce((sum, overtime) => sum + overtime.totalPayment, 0);
+    // Eğer bu ay için mesai yoksa, son 30 günlük mesaileri göster
+    const last30DaysOvertimes = userOvertimes.filter(overtime => {
+      const overtimeDate = new Date(overtime.date);
+      const thirtyDaysAgo = new Date();
+      thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+      return overtimeDate >= thirtyDaysAgo;
+    });
+    
+    // Bu ay için mesai yoksa son 30 günlük mesaileri kullan
+    const effectiveOvertimes = currentMonthOvertimes.length > 0 ? currentMonthOvertimes : last30DaysOvertimes;
+    console.log('📊 Using overtimes:', effectiveOvertimes.length, 'records');
+    
+    console.log('📊 Current month overtimes found:', currentMonthOvertimes.length);
+    const totalOvertimePay = effectiveOvertimes.reduce((sum, overtime) => sum + overtime.totalPayment, 0);
+    console.log('💰 Total overtime pay:', totalOvertimePay);
     
     // Bu ay için girilen izinler
     const currentMonthLeaves = userLeaves.filter(leave => {
@@ -102,15 +124,10 @@ const Dashboard: React.FC = () => {
     const besContribution = parseFloat(settings.salary.besContribution) || 0;
     
     // 4. BRÜT MAAŞ: Net maaştan brüte çevirme
-    // Net maaş = Brüt maaş - (Brüt maaş * vergi oranı)
-    // Brüt maaş = Net maaş / (1 - vergi oranı)
     const netSalary = baseSalary - unpaidLeaveDeduction + totalOvertimePay;
     
-    // Vergi oranını belirle
-    const taxRate = netSalary > 50000 ? 0.35 : netSalary > 30000 ? 0.30 : netSalary > 15000 ? 0.25 : 0.20;
-    
-    // Brüt maaş hesaplama
-    const grossSalary = netSalary / (1 - taxRate);
+    // Brüt maaş hesaplama (doğru formül)
+    const grossSalary = calculateGrossSalary(netSalary, besContribution);
     
     return {
       baseSalary: baseSalary, // Settings'teki varsayılan net maaş
@@ -118,9 +135,10 @@ const Dashboard: React.FC = () => {
       besContribution,
       grossSalary,
       netSalary,
-      overtimeHours: currentMonthOvertimes.reduce((sum, overtime) => sum + overtime.hours, 0),
+      overtimeHours: effectiveOvertimes.reduce((sum, overtime) => sum + overtime.hours, 0),
       unpaidLeaveDays,
-      unpaidLeaveDeduction
+      unpaidLeaveDeduction,
+      usingLast30Days: currentMonthOvertimes.length === 0 && last30DaysOvertimes.length > 0
     };
   };
 
@@ -128,6 +146,19 @@ const Dashboard: React.FC = () => {
     console.log('🔄 Recalculating current month salary...');
     console.log('📊 Current overtimes:', userOvertimes.length);
     console.log('📊 Current leaves:', userLeaves.length);
+    
+    // Debug: Mevcut ay ve yıl bilgisi
+    const currentDate = new Date();
+    const currentMonth = currentDate.getMonth();
+    const currentYear = currentDate.getFullYear();
+    console.log('📅 Current month/year:', currentMonth, currentYear);
+    
+    // Debug: Mesai verilerinin tarihlerini kontrol et
+    userOvertimes.forEach(overtime => {
+      const overtimeDate = new Date(overtime.date);
+      console.log('📊 Overtime date:', overtime.date, 'Month:', overtimeDate.getMonth(), 'Year:', overtimeDate.getFullYear());
+    });
+    
     return calculateCurrentMonthSalary();
   }, [overtimes, leaves, settings.salary.defaultNetSalary, settings.salary.besContribution]);
   
@@ -229,10 +260,7 @@ const Dashboard: React.FC = () => {
             </div>
             <div className="flex space-x-3">
               <button
-                onClick={() => {
-                  // Ayarlar sayfasına yönlendir
-                  window.location.href = '/mesi_takip_web_V1/#/settings';
-                }}
+                onClick={onNavigateToSettings}
                 className="px-4 py-2 bg-white text-orange-600 rounded-lg hover:bg-yellow-50 transition-colors font-medium"
               >
                 Maaş Ayarları
@@ -284,6 +312,9 @@ const Dashboard: React.FC = () => {
             <p className="text-green-200 text-sm">Fazla Mesai</p>
             <p className="text-xl font-semibold">{formatCurrency(currentMonthSalary.overtimePay)}</p>
             <p className="text-green-200 text-xs">{currentMonthSalary.overtimeHours} saat</p>
+            {currentMonthSalary.usingLast30Days && (
+              <p className="text-green-200 text-xs italic">(Son 30 gün)</p>
+            )}
           </div>
           {currentMonthSalary.unpaidLeaveDays > 0 && (
             <div className="bg-red-500/20 rounded-lg p-4">

@@ -4,6 +4,7 @@ import { DataProvider } from './contexts/DataContext';
 import { ToastProvider } from './contexts/ToastContext';
 import { SidebarProvider, useSidebar } from './contexts/SidebarContext';
 import { SettingsProvider } from './contexts/SettingsContext';
+import ErrorBoundary from './components/ErrorBoundary';
 import LoginForm from './components/Auth/LoginForm';
 import RegisterForm from './components/Auth/RegisterForm';
 import Header from './components/Layout/Header';
@@ -16,42 +17,28 @@ import LeaveManagement from './components/Leaves/LeaveManagement';
 import ReportsAnalytics from './components/Reports/ReportsAnalytics';
 import Settings from './components/Settings/Settings';
 import CompensationCalculators from './components/Calculators/CompensationCalculators';
-import { firebase, auth, db } from './config/firebase';
+import { firebase, auth, db, signInAnonymously, signOut } from './config/firebase';
 
-// Firebase bağlantı testi
-console.log('=== FIREBASE CONNECTION TEST ===');
-console.log('Firebase app initialized:', firebase);
-console.log('Firebase auth service:', auth);
-console.log('Firebase firestore service:', db);
-console.log('Window.firebase available:', (window as any).firebase);
-console.log('Window.firebaseAuth available:', (window as any).firebaseAuth);
-console.log('Window.firebaseDb available:', (window as any).firebaseDb);
-console.log('Window.auth available:', (window as any).auth);
-console.log('Window.db available:', (window as any).db);
+// Firebase bağlantı testi (sadece development ortamında)
+if (import.meta.env.DEV) {
+  console.log('=== FIREBASE CONNECTION TEST ===');
+  console.log('Firebase app initialized:', firebase);
+  console.log('Firebase auth service:', auth);
+  console.log('Firebase firestore service:', db);
+  console.log('Window.firebase available:', (window as any).firebase);
+  console.log('Window.firebaseAuth available:', (window as any).firebaseAuth);
+  console.log('Window.firebaseDb available:', (window as any).firebaseDb);
+  console.log('Window.auth available:', (window as any).auth);
+  console.log('Window.db available:', (window as any).db);
 
-// Firebase bağlantısını test et
-const testFirebaseConnection = async () => {
-  try {
-    console.log('🧪 Testing Firebase connection...');
-    const testUser = await auth.signInAnonymously();
-    console.log('✅ Firebase connection test successful:', testUser);
-    await auth.signOut();
-    console.log('✅ Firebase signout test successful');
-  } catch (error) {
-    console.error('❌ Firebase connection test failed:', error);
-  }
-};
+  // Global scope test
+  console.log('🔍 Global scope test:');
+  console.log('typeof window.firebase:', typeof (window as any).firebase);
+  console.log('typeof window.auth:', typeof (window as any).auth);
+  console.log('typeof window.db:', typeof (window as any).db);
 
-// Test'i çalıştır
-testFirebaseConnection();
-
-// Global scope test
-console.log('🔍 Global scope test:');
-console.log('typeof window.firebase:', typeof (window as any).firebase);
-console.log('typeof window.auth:', typeof (window as any).auth);
-console.log('typeof window.db:', typeof (window as any).db);
-
-console.log('=== END FIREBASE TEST ===');
+  console.log('=== END FIREBASE TEST ===');
+}
 
 const AuthWrapper: React.FC = () => {
   const [showLogin, setShowLogin] = useState(true);
@@ -103,7 +90,7 @@ const MainAppContent: React.FC = () => {
   const renderActiveComponent = () => {
     switch (activeTab) {
       case 'dashboard':
-        return <Dashboard />;
+        return <Dashboard onNavigateToSettings={() => setActiveTab('settings')} />;
       case 'salary':
         return <SalaryManagement />;
       case 'overtime':
@@ -119,7 +106,7 @@ const MainAppContent: React.FC = () => {
       case 'calculators':
         return <CompensationCalculators />;
       default:
-        return <Dashboard />;
+        return <Dashboard onNavigateToSettings={() => setActiveTab('settings')} />;
     }
   };
 
@@ -152,13 +139,15 @@ const MainApp: React.FC = () => {
 
 function App() {
   return (
-    <ToastProvider>
-      <AuthProvider>
-        <DataProvider>
-          <MainApp />
-        </DataProvider>
-      </AuthProvider>
-    </ToastProvider>
+    <ErrorBoundary>
+      <ToastProvider>
+        <AuthProvider>
+          <DataProvider>
+            <MainApp />
+          </DataProvider>
+        </AuthProvider>
+      </ToastProvider>
+    </ErrorBoundary>
   );
 }
 

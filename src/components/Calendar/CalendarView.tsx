@@ -47,15 +47,23 @@ const CalendarView: React.FC = () => {
     return days;
   };
 
+  // Tarih formatını YYYY-MM-DD formatına çeviren yardımcı fonksiyon
+  const formatDateToYYYYMMDD = (date: Date) => {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  };
+
   const isHoliday = (date: Date | null) => {
     if (!date) return false;
-    const dateStr = date.toISOString().split('T')[0];
+    const dateStr = formatDateToYYYYMMDD(date);
     return holidays.some(holiday => holiday.date === dateStr);
   };
 
   const getHolidayName = (date: Date | null) => {
     if (!date) return '';
-    const dateStr = date.toISOString().split('T')[0];
+    const dateStr = formatDateToYYYYMMDD(date);
     const holiday = holidays.find(holiday => holiday.date === dateStr);
     return holiday?.name || '';
   };
@@ -90,12 +98,16 @@ const CalendarView: React.FC = () => {
 
   const getDayEvents = (date: Date | null) => {
     if (!date) return { holiday: null, leave: null, overtime: null };
-    const dateStr = date.toISOString().split('T')[0];
+    const dateStr = formatDateToYYYYMMDD(date);
     const holiday = holidays.find(h => h.date === dateStr);
     const leave = userLeaves.find(l => {
+      // Tarih karşılaştırması için yerel tarih formatını kullan
       const start = new Date(l.startDate);
       const end = new Date(l.endDate);
-      return date >= start && date <= end;
+      const currentDate = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+      const startDate = new Date(start.getFullYear(), start.getMonth(), start.getDate());
+      const endDate = new Date(end.getFullYear(), end.getMonth(), end.getDate());
+      return currentDate >= startDate && currentDate <= endDate;
     });
     const overtime = userOvertimes.find(o => o.date === dateStr);
     return { holiday, leave, overtime };

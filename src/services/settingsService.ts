@@ -29,6 +29,23 @@ export interface UserSettings {
     weekend: number;
     holiday: number;
   };
+  salary: {
+    defaultNetSalary: string;
+    defaultHourlyRate: string;
+    currency: string;
+    workingDaysPerWeek: string;
+    annualLeaveEntitlement: string;
+    besContribution: string;
+  };
+  profile: {
+    name: string;
+    email: string;
+    phone: string;
+    department: string;
+    position: string;
+    startDate: string;
+    employeeId: string;
+  };
   createdAt: Timestamp;
   updatedAt: Timestamp;
 }
@@ -53,6 +70,23 @@ export const defaultSettings: Omit<UserSettings, 'uid' | 'createdAt' | 'updatedA
     normal: 1.5,
     weekend: 2.0,
     holiday: 2.5
+  },
+  salary: {
+    defaultNetSalary: '',
+    defaultHourlyRate: '',
+    currency: 'TRY',
+    workingDaysPerWeek: '5',
+    annualLeaveEntitlement: '14',
+    besContribution: ''
+  },
+  profile: {
+    name: '',
+    email: '',
+    phone: '',
+    department: '',
+    position: '',
+    startDate: '',
+    employeeId: ''
   }
 };
 

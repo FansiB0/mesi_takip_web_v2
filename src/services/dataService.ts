@@ -166,6 +166,18 @@ export const overtimeService = {
       console.error('Error updating overtime:', error);
       return false;
     }
+  },
+
+  // Mesai sil
+  async delete(id: string): Promise<boolean> {
+    try {
+      await deleteDoc(doc(db, 'overtimes', id));
+      console.log('✅ Overtime deleted from Firebase:', id);
+      return true;
+    } catch (error) {
+      console.error('Error deleting overtime:', error);
+      return false;
+    }
   }
 };
 
@@ -216,6 +228,18 @@ export const leaveService = {
       return true;
     } catch (error) {
       console.error('Error updating leave:', error);
+      return false;
+    }
+  },
+
+  // İzin sil
+  async delete(id: string): Promise<boolean> {
+    try {
+      await deleteDoc(doc(db, 'leaves', id));
+      console.log('✅ Leave deleted from Firebase:', id);
+      return true;
+    } catch (error) {
+      console.error('Error deleting leave:', error);
       return false;
     }
   }

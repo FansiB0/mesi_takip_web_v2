@@ -63,6 +63,32 @@ const Settings: React.FC = () => {
     updateAppearance({ [field]: value });
   };
 
+  // İşe başlama tarihine göre yıllık izin hakkını hesapla
+  const calculateAnnualLeave = (startDate: string) => {
+    if (!startDate) return '0';
+    
+    const start = new Date(startDate);
+    const now = new Date();
+    const years = now.getFullYear() - start.getFullYear();
+    
+    // 1 yıldan az çalışma süresi varsa 0 gün
+    if (years < 1) return '0';
+    
+    // 1 yıl ve üzeri çalışma süresi varsa 14 gün
+    return '14';
+  };
+
+  // İşe başlama tarihi değiştiğinde yıllık izin hakkını güncelle
+  const handleStartDateChange = (startDate: string) => {
+    const annualLeave = calculateAnnualLeave(startDate);
+    
+    // Profil bilgilerini güncelle
+    updateSettings('profile', { startDate });
+    
+    // Yıllık izin hakkını otomatik güncelle
+    updateSettings('salary', { annualLeaveEntitlement: annualLeave });
+  };
+
   // Şifre değiştir
   const handleChangePassword = async () => {
     if (newPassword !== confirmPassword) {
@@ -211,9 +237,12 @@ const Settings: React.FC = () => {
           <input
             type="date"
             value={settings.profile.startDate}
-            onChange={(e) => updateSettings('profile', { startDate: e.target.value })}
+            onChange={(e) => handleStartDateChange(e.target.value)}
             className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
           />
+          <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+            Tarih değiştiğinde yıllık izin hakkı otomatik hesaplanır
+          </p>
         </div>
       </div>
 
@@ -405,6 +434,9 @@ const Settings: React.FC = () => {
                 onChange={(e) => updateSettings('salary', { annualLeaveEntitlement: e.target.value })}
                 className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
               />
+              <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                İşe başlama tarihine göre otomatik hesaplanır (1 yıl+ = 14 gün)
+              </p>
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">BES Katkısı (₺)</label>

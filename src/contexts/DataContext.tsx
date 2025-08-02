@@ -45,12 +45,25 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [overtimes, setOvertimes] = useState<Overtime[]>([]);
   const [leaves, setLeaves] = useState<Leave[]>([]);
   const [holidays, setHolidays] = useState<Holiday[]>([]);
-  const { user } = useAuth();
+  
+  // useAuth'u try-catch ile sarmalayalım
+  let user = null;
+  try {
+    const authContext = useAuth();
+    user = authContext.user;
+  } catch (error) {
+    console.log('Auth context not available yet');
+  }
 
   // Load data from Firebase when user changes
   useEffect(() => {
     if (user?.id) {
       loadData();
+    } else {
+      // Kullanıcı yoksa verileri temizle
+      setSalaries([]);
+      setOvertimes([]);
+      setLeaves([]);
     }
   }, [user?.id]);
 
@@ -60,20 +73,50 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       console.log('🔄 Loading data for user:', user.id);
       
-      // Firebase'den mesai verilerini yükle
+      // Firebase'den mesai verilerini yükle ve dönüştür
       const overtimeData = await overtimeService.getAll(user.id);
       console.log('✅ Overtime data loaded:', overtimeData.length, 'records');
-      setOvertimes(overtimeData);
+      const convertedOvertimes = overtimeData.map(o => ({
+        id: o.id || '',
+        userId: o.userId,
+        date: o.date,
+        hours: o.hours,
+        overtimeType: 'normal' as const, // Varsayılan değer
+        hourlyRate: 150, // Varsayılan değer
+        totalPayment: o.hours * 150 // Hesaplanan değer
+      }));
+      setOvertimes(convertedOvertimes);
       
-      // Firebase'den izin verilerini yükle
+      // Firebase'den izin verilerini yükle ve dönüştür
       const leaveData = await leaveService.getAll(user.id);
       console.log('✅ Leave data loaded:', leaveData.length, 'records');
-      setLeaves(leaveData);
+      const convertedLeaves = leaveData.map(l => ({
+        id: l.id || '',
+        userId: l.userId,
+        startDate: l.startDate,
+        endDate: l.endDate,
+        daysUsed: 1, // Varsayılan değer
+        status: l.status,
+        reason: l.reason,
+        leaveType: 'annual' as const // Varsayılan değer
+      }));
+      setLeaves(convertedLeaves);
       
-      // Firebase'den maaş verilerini yükle
+      // Firebase'den maaş verilerini yükle ve dönüştür
       const salaryData = await salaryService.getAll(user.id);
       console.log('✅ Salary data loaded:', salaryData.length, 'records');
-      setSalaries(salaryData);
+      const convertedSalaries = salaryData.map(s => ({
+        id: s.id || '',
+        userId: s.userId,
+        month: s.month,
+        year: s.year,
+        grossSalary: s.grossSalary,
+        netSalary: s.netSalary,
+        bonus: s.bonus,
+        besDeduction: s.besDeduction,
+        createdAt: s.createdAt?.toDate?.()?.toISOString() || new Date().toISOString()
+      }));
+      setSalaries(convertedSalaries);
       
       // Tatil verilerini localStorage'dan yükle (statik veri)
       const storedHolidays = localStorage.getItem('holidays');
@@ -150,11 +193,17 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       console.log('🔄 Adding overtime for user:', user.id);
       console.log('📝 Overtime data:', overtime);
       
-      const newOvertimeData = {
-        ...overtime,
+      // Firebase için uyumlu veri oluştur
+      const firebaseOvertime = {
+        employeeId: user.id,
+        date: overtime.date,
+        hours: overtime.hours,
+        description: 'Mesai',
+        status: 'approved' as const,
         userId: user.id
       };
-      const id = await overtimeService.add(newOvertimeData);
+      
+      const id = await overtimeService.add(firebaseOvertime);
       if (id) {
         const newOvertime: Overtime = {
           ...overtime,
@@ -180,8 +229,19 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  const deleteOvertime = (id: string) => {
-    setOvertimes(prev => prev.filter(o => o.id !== id));
+  const deleteOvertime = async (id: string) => {
+    try {
+      console.log('🔄 Deleting overtime:', id);
+      const success = await overtimeService.delete(id);
+      if (success) {
+        setOvertimes(prev => prev.filter(o => o.id !== id));
+        console.log('✅ Overtime deleted successfully');
+      } else {
+        console.error('❌ Failed to delete overtime from Firebase');
+      }
+    } catch (error) {
+      console.error('Error deleting overtime:', error);
+    }
   };
 
   // Leave functions
@@ -217,8 +277,19 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  const deleteLeave = (id: string) => {
-    setLeaves(prev => prev.filter(l => l.id !== id));
+  const deleteLeave = async (id: string) => {
+    try {
+      console.log('🔄 Deleting leave:', id);
+      const success = await leaveService.delete(id);
+      if (success) {
+        setLeaves(prev => prev.filter(l => l.id !== id));
+        console.log('✅ Leave deleted successfully');
+      } else {
+        console.error('❌ Failed to delete leave from Firebase');
+      }
+    } catch (error) {
+      console.error('Error deleting leave:', error);
+    }
   };
 
   // Holiday functions
@@ -238,25 +309,27 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setHolidays(prev => prev.filter(h => h.id !== id));
   };
 
+  const contextValue = {
+    salaries,
+    addSalary,
+    updateSalary,
+    deleteSalary,
+    overtimes,
+    addOvertime,
+    updateOvertime,
+    deleteOvertime,
+    leaves,
+    addLeave,
+    updateLeave,
+    deleteLeave,
+    holidays,
+    addHoliday,
+    updateHoliday,
+    deleteHoliday
+  };
+
   return (
-    <DataContext.Provider value={{
-      salaries,
-      addSalary,
-      updateSalary,
-      deleteSalary,
-      overtimes,
-      addOvertime,
-      updateOvertime,
-      deleteOvertime,
-      leaves,
-      addLeave,
-      updateLeave,
-      deleteLeave,
-      holidays,
-      addHoliday,
-      updateHoliday,
-      deleteHoliday
-    }}>
+    <DataContext.Provider value={contextValue}>
       {children}
     </DataContext.Provider>
   );

@@ -30,7 +30,9 @@ const ReportsAnalytics: React.FC = () => {
     });
     
     const totalUnpaidLeaveDays = yearLeaves.reduce((sum, leave) => sum + leave.daysUsed, 0);
-    const avgDailySalary = totalNet / (yearSalaries.length * 30) || 0; // Günlük maaş (30 gün üzerinden)
+    // Günlük maaş hesaplama (aylık net maaş / 30 gün)
+    const avgMonthlyNetSalary = yearSalaries.length > 0 ? totalNet / yearSalaries.length : 0;
+    const avgDailySalary = avgMonthlyNetSalary / 30; // Günlük maaş (30 gün üzerinden)
     const totalUnpaidLeaveDeduction = totalUnpaidLeaveDays * avgDailySalary;
     
     const adjustedTotalNet = totalNet - totalUnpaidLeaveDeduction;

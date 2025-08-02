@@ -115,13 +115,13 @@ export const SettingsProvider: React.FC<SettingsProviderProps> = ({ children }) 
             // Firebase'den gelen ayarları bizim formatımıza dönüştür
             const convertedSettings: UserSettings = {
               profile: {
-                name: user?.name || defaultSettings.profile.name,
-                email: user?.email || defaultSettings.profile.email,
-                phone: defaultSettings.profile.phone,
-                department: defaultSettings.profile.department,
-                position: defaultSettings.profile.position,
-                startDate: user?.startDate || defaultSettings.profile.startDate,
-                employeeId: defaultSettings.profile.employeeId
+                name: firebaseSettings.profile?.name || user?.name || defaultSettings.profile.name,
+                email: firebaseSettings.profile?.email || user?.email || defaultSettings.profile.email,
+                phone: firebaseSettings.profile?.phone || defaultSettings.profile.phone,
+                department: firebaseSettings.profile?.department || defaultSettings.profile.department,
+                position: firebaseSettings.profile?.position || defaultSettings.profile.position,
+                startDate: firebaseSettings.profile?.startDate || user?.startDate || defaultSettings.profile.startDate,
+                employeeId: firebaseSettings.profile?.employeeId || defaultSettings.profile.employeeId
               },
               notifications: {
                 salaryReminder: firebaseSettings.notifications?.salary || defaultSettings.notifications.salaryReminder,
@@ -132,13 +132,13 @@ export const SettingsProvider: React.FC<SettingsProviderProps> = ({ children }) 
                 pushNotifications: firebaseSettings.notifications?.push || defaultSettings.notifications.pushNotifications
               },
               salary: {
-                defaultNetSalary: defaultSettings.salary.defaultNetSalary,
-                defaultHourlyRate: defaultSettings.salary.defaultHourlyRate,
-                currency: defaultSettings.salary.currency,
+                defaultNetSalary: firebaseSettings.salary?.defaultNetSalary || defaultSettings.salary.defaultNetSalary,
+                defaultHourlyRate: firebaseSettings.salary?.defaultHourlyRate || defaultSettings.salary.defaultHourlyRate,
+                currency: firebaseSettings.salary?.currency || defaultSettings.salary.currency,
                 workingHoursPerDay: firebaseSettings.workingHours?.daily?.toString() || defaultSettings.salary.workingHoursPerDay,
-                workingDaysPerWeek: defaultSettings.salary.workingDaysPerWeek,
-                annualLeaveEntitlement: defaultSettings.salary.annualLeaveEntitlement,
-                besContribution: defaultSettings.salary.besContribution
+                workingDaysPerWeek: firebaseSettings.salary?.workingDaysPerWeek || defaultSettings.salary.workingDaysPerWeek,
+                annualLeaveEntitlement: firebaseSettings.salary?.annualLeaveEntitlement || defaultSettings.salary.annualLeaveEntitlement,
+                besContribution: firebaseSettings.salary?.besContribution || defaultSettings.salary.besContribution
               },
               appearance: {
                 theme: (firebaseSettings.theme === 'system' ? 'auto' : firebaseSettings.theme) || defaultSettings.appearance.theme,
@@ -250,13 +250,15 @@ export const SettingsProvider: React.FC<SettingsProviderProps> = ({ children }) 
         const firebaseUpdates: any = {};
         
         if (section === 'profile') {
-          firebaseUpdates.name = newSettings.profile.name;
-          firebaseUpdates.email = newSettings.profile.email;
-          firebaseUpdates.phone = newSettings.profile.phone;
-          firebaseUpdates.department = newSettings.profile.department;
-          firebaseUpdates.position = newSettings.profile.position;
-          firebaseUpdates.startDate = newSettings.profile.startDate;
-          firebaseUpdates.employeeId = newSettings.profile.employeeId;
+          firebaseUpdates.profile = {
+            name: newSettings.profile.name,
+            email: newSettings.profile.email,
+            phone: newSettings.profile.phone,
+            department: newSettings.profile.department,
+            position: newSettings.profile.position,
+            startDate: newSettings.profile.startDate,
+            employeeId: newSettings.profile.employeeId
+          };
         }
         
         if (section === 'notifications') {
@@ -270,6 +272,14 @@ export const SettingsProvider: React.FC<SettingsProviderProps> = ({ children }) 
         }
         
         if (section === 'salary') {
+          firebaseUpdates.salary = {
+            defaultNetSalary: newSettings.salary.defaultNetSalary,
+            defaultHourlyRate: newSettings.salary.defaultHourlyRate,
+            currency: newSettings.salary.currency,
+            workingDaysPerWeek: newSettings.salary.workingDaysPerWeek,
+            annualLeaveEntitlement: newSettings.salary.annualLeaveEntitlement,
+            besContribution: newSettings.salary.besContribution
+          };
           firebaseUpdates.workingHours = {
             daily: parseInt(newSettings.salary.workingHoursPerDay) || 8,
             weekly: parseInt(newSettings.salary.workingDaysPerWeek) * 8 || 40,

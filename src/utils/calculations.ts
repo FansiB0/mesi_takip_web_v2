@@ -1,14 +1,27 @@
 import { CompensationCalculation } from '../types';
 
+// Brüt maaştan net maaşa çevirme
 export const calculateNetSalary = (grossSalary: number, besDeduction: number = 0): number => {
-  // Turkish tax calculations (simplified)
-  const incomeTax = grossSalary * 0.15; // 15% income tax (simplified)
-  const stampTax = grossSalary * 0.00759; // 0.759% stamp tax
-  const ssgDeduction = grossSalary * 0.14; // 14% SSK deduction
-  const unemploymentDeduction = grossSalary * 0.01; // 1% unemployment insurance
+  // Türkiye vergi hesaplamaları (2024)
+  const incomeTax = grossSalary * 0.15; // 15% gelir vergisi (basitleştirilmiş)
+  const stampTax = grossSalary * 0.00759; // 0.759% damga vergisi
+  const ssgDeduction = grossSalary * 0.14; // 14% SSK kesintisi
+  const unemploymentDeduction = grossSalary * 0.01; // 1% işsizlik sigortası
   
   const totalDeductions = incomeTax + stampTax + ssgDeduction + unemploymentDeduction + besDeduction;
   return Math.max(0, grossSalary - totalDeductions);
+};
+
+// Net maaştan brüt maaşa çevirme
+export const calculateGrossSalary = (netSalary: number, besDeduction: number = 0): number => {
+  // Net maaş = Brüt maaş - (Brüt maaş * toplam kesinti oranı)
+  // Net maaş = Brüt maaş * (1 - toplam kesinti oranı)
+  // Brüt maaş = Net maaş / (1 - toplam kesinti oranı)
+  
+  const totalDeductionRate = 0.15 + 0.00759 + 0.14 + 0.01; // Toplam kesinti oranı
+  const adjustedNetSalary = netSalary + besDeduction; // BES kesintisini net maaşa ekle
+  
+  return adjustedNetSalary / (1 - totalDeductionRate);
 };
 
 export const calculateOvertimePay = (

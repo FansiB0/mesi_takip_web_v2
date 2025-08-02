@@ -3,6 +3,7 @@ import { Plus, DollarSign, Calculator, Trash2, Edit } from 'lucide-react';
 import { useData } from '../../contexts/DataContext';
 import { useAuth } from '../../contexts/AuthContext';
 import { useSettings } from '../../contexts/SettingsContext';
+import { calculateGrossSalary } from '../../utils/calculations';
 import { formatCurrency } from '../../utils/calculations';
 
 const SalaryManagement: React.FC = () => {
@@ -29,8 +30,8 @@ const SalaryManagement: React.FC = () => {
     const net = parseFloat(calculatorNet);
     const bes = parseFloat(calculatorBes);
     
-    // Brüt maaş hesaplama
-    const gross = (net + bes) / 0.75;
+    // Brüt maaş hesaplama (doğru formül)
+    const gross = calculateGrossSalary(net, bes);
     
     // Bu ay için ücretsiz izin kontrolü
     const currentDate = new Date();
@@ -57,7 +58,7 @@ const SalaryManagement: React.FC = () => {
     const adjustedNet = net - unpaidLeaveDeduction;
     
     return {
-      gross: (adjustedNet + bes) / 0.75,
+      gross: calculateGrossSalary(adjustedNet, bes),
       net: adjustedNet,
       unpaidLeaveDays,
       unpaidLeaveDeduction

@@ -70,7 +70,36 @@ export const loginUser = async (email: string, password: string) => {
       return await localAuthService.loginUser(email, password);
     }
     
-    return { success: false, error: error.message };
+    // Kullanıcı dostu hata mesajları
+    let userFriendlyError = error.message;
+    
+    switch (error.code) {
+      case 'auth/invalid-credential':
+        userFriendlyError = 'Email adresi veya şifre hatalı. Lütfen bilgilerinizi kontrol edin veya kayıt olun.';
+        break;
+      case 'auth/user-not-found':
+        userFriendlyError = 'Bu email adresi ile kayıtlı kullanıcı bulunamadı. Lütfen kayıt olun.';
+        break;
+      case 'auth/wrong-password':
+        userFriendlyError = 'Şifre hatalı. Lütfen şifrenizi kontrol edin.';
+        break;
+      case 'auth/email-already-in-use':
+        userFriendlyError = 'Bu email adresi zaten kullanılıyor. Lütfen farklı bir email adresi kullanın.';
+        break;
+      case 'auth/weak-password':
+        userFriendlyError = 'Şifre çok zayıf. En az 6 karakter kullanın.';
+        break;
+      case 'auth/invalid-email':
+        userFriendlyError = 'Geçersiz email adresi. Lütfen doğru formatta bir email adresi girin.';
+        break;
+      case 'auth/too-many-requests':
+        userFriendlyError = 'Çok fazla başarısız giriş denemesi. Lütfen bir süre bekleyin.';
+        break;
+      default:
+        userFriendlyError = 'Giriş yapılamadı. Lütfen bilgilerinizi kontrol edin.';
+    }
+    
+    return { success: false, error: userFriendlyError };
   }
 };
 

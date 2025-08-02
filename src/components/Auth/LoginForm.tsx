@@ -11,20 +11,40 @@ const LoginForm: React.FC<LoginFormProps> = ({ onSwitchToRegister }) => {
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
+  const [emailError, setEmailError] = useState(false);
+  const [passwordError, setPasswordError] = useState(false);
   const { login, isLoading } = useAuth();
+
+
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
+    setEmailError(false);
+    setPasswordError(false);
     
     if (!email || !password) {
       setError('Lütfen tüm alanları doldurun.');
+      if (!email) setEmailError(true);
+      if (!password) setPasswordError(true);
       return;
     }
     
     const result = await login(email, password);
     if (!result.success) {
       setError(result.error || 'Giriş başarısız. Email veya şifre hatalı.');
+      // Hata türüne göre input alanlarını işaretle
+      if (result.error?.includes('email') || result.error?.includes('Email')) {
+        setEmailError(true);
+      }
+      if (result.error?.includes('şifre') || result.error?.includes('password')) {
+        setPasswordError(true);
+      }
+      // Genel hata durumunda her iki alanı da işaretle
+      if (result.error?.includes('Email adresi veya şifre hatalı')) {
+        setEmailError(true);
+        setPasswordError(true);
+      }
     }
   };
 
@@ -37,8 +57,19 @@ const LoginForm: React.FC<LoginFormProps> = ({ onSwitchToRegister }) => {
 
       {/* Hata mesajı üstte ve dikkat çekici şekilde */}
       {error && (
-        <div className="mb-4 text-red-700 dark:text-red-400 text-base bg-red-100 dark:bg-red-900/20 border border-red-300 dark:border-red-800 p-3 rounded-lg font-semibold text-center">
-          {error}
+        <div className="mb-4 p-4 bg-red-50 dark:bg-red-900/30 border-l-4 border-red-500 rounded-lg">
+          <div className="flex items-center">
+            <div className="flex-shrink-0">
+              <svg className="h-5 w-5 text-red-500" fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+              </svg>
+            </div>
+            <div className="ml-3">
+              <p className="text-sm text-red-700 dark:text-red-300 font-medium">
+                {error}
+              </p>
+            </div>
+          </div>
         </div>
       )}
 
@@ -55,12 +86,30 @@ const LoginForm: React.FC<LoginFormProps> = ({ onSwitchToRegister }) => {
               id="email"
               type="email"
               value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              className="block w-full pl-10 pr-3 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
+              onChange={(e) => {
+                setEmail(e.target.value);
+                if (emailError) setEmailError(false);
+              }}
+              onFocus={() => {
+                if (emailError) setEmailError(false);
+              }}
+              className={`block w-full pl-10 pr-3 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors bg-white dark:bg-gray-800 text-gray-900 dark:text-white ${
+                emailError 
+                  ? 'border-red-500 focus:ring-red-500 focus:border-red-500' 
+                  : 'border-gray-300 dark:border-gray-600'
+              }`}
               placeholder="ornek@email.com"
               required
             />
           </div>
+          {emailError && (
+            <p className="mt-1 text-sm text-red-600 dark:text-red-400 flex items-center">
+              <svg className="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+              </svg>
+              Lütfen geçerli bir email adresi girin
+            </p>
+          )}
         </div>
 
         <div>
@@ -75,8 +124,18 @@ const LoginForm: React.FC<LoginFormProps> = ({ onSwitchToRegister }) => {
               id="password"
               type={showPassword ? 'text' : 'password'}
               value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className="block w-full pl-10 pr-10 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
+              onChange={(e) => {
+                setPassword(e.target.value);
+                if (passwordError) setPasswordError(false);
+              }}
+              onFocus={() => {
+                if (passwordError) setPasswordError(false);
+              }}
+              className={`block w-full pl-10 pr-10 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors bg-white dark:bg-gray-800 text-gray-900 dark:text-white ${
+                passwordError 
+                  ? 'border-red-500 focus:ring-red-500 focus:border-red-500' 
+                  : 'border-gray-300 dark:border-gray-600'
+              }`}
               placeholder="Şifrenizi girin"
               required
             />
@@ -92,6 +151,14 @@ const LoginForm: React.FC<LoginFormProps> = ({ onSwitchToRegister }) => {
               )}
             </button>
           </div>
+          {passwordError && (
+            <p className="mt-1 text-sm text-red-600 dark:text-red-400 flex items-center">
+              <svg className="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+              </svg>
+              Şifre hatalı veya eksik
+            </p>
+          )}
         </div>
 
         <button
@@ -101,6 +168,8 @@ const LoginForm: React.FC<LoginFormProps> = ({ onSwitchToRegister }) => {
         >
           {isLoading ? 'Giriş yapılıyor...' : 'Giriş Yap'}
         </button>
+
+
       </form>
 
       <div className="mt-6 text-center">
