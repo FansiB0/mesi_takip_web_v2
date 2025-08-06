@@ -4,7 +4,7 @@ import react from '@vitejs/plugin-react';
 // https://vitejs.dev/config/
 export default defineConfig({
   plugins: [react()],
-  // Netlify için base path
+  // Firebase + Fallback Database için base path
   base: '/',
   optimizeDeps: {
     exclude: ['lucide-react'],
@@ -30,6 +30,6 @@ export default defineConfig({
   },
   define: {
     // Global değişkenler
-    __IS_NETLIFY__: JSON.stringify(process.env.NODE_ENV === 'production'),
+    __USE_FIREBASE_FIRST__: JSON.stringify(true),
   },
 });
