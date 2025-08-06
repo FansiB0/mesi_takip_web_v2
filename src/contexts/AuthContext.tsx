@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { User } from '../types';
-import { loginUser, register as registerUser, logoutUser, onAuthStateChange, getCurrentUser, createUserProfileForExistingUser } from '../services/authService';
+import { loginUser, register as registerUser, logoutUser, onAuthStateChange, getCurrentUser } from '../services/authService';
 import { userProfileService } from '../services/userProfileService';
 import { settingsService } from '../services/settingsService';
 import { User as FirebaseUser } from 'firebase/auth';
@@ -64,7 +64,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           };
           
           // userProfiles koleksiyonuna otomatik kaydet
-          await createUserProfileForExistingUser(firebaseUser.uid, userData);
+          await userProfileService.createProfile({
+            uid: firebaseUser.uid,
+            name: userData.name,
+            email: userData.email,
+            startDate: userData.startDate,
+            employeeType: userData.employeeType,
+            isActive: true,
+            lastLogin: new Date().toISOString()
+          });
           
           setUser(userData);
           console.log('✅ User set in context (fallback):', userData);
@@ -95,13 +103,21 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const register = async (name: string, email: string, password: string, startDate: string) => {
     try {
-      const result = await registerUser(name, email, password, startDate);
+      const userData = { name, startDate, employeeType: 'normal' };
+      const result = await registerUser(email, password, userData);
       
-      if (result.success && result.data?.user) {
-        setUser(result.data.user);
+      if (result.success && result.user) {
+        const user: User = {
+          id: result.user.uid,
+          name,
+          email,
+          startDate,
+          employeeType: 'normal'
+        };
+        setUser(user);
         return { success: true };
       } else {
-        return { success: false, error: result.error || 'Kayıt sırasında bir hata oluştu' };
+        return { success: false, error: 'Kayıt sırasında bir hata oluştu' };
       }
     } catch (error: any) {
       console.error('Registration error:', error);
