@@ -4,7 +4,8 @@ import react from '@vitejs/plugin-react';
 // https://vitejs.dev/config/
 export default defineConfig({
   plugins: [react()],
-  base: '/mesi_takip_web_v2/',
+  // Netlify için base path
+  base: '/',
   optimizeDeps: {
     exclude: ['lucide-react'],
   },
@@ -29,6 +30,6 @@ export default defineConfig({
   },
   define: {
     // Global değişkenler
-    __IS_GITHUB_PAGES__: JSON.stringify(process.env.NODE_ENV === 'production'),
+    __IS_NETLIFY__: JSON.stringify(process.env.NODE_ENV === 'production'),
   },
 });
