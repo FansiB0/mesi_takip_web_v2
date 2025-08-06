@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { DataProvider } from './contexts/DataContext';
 import { ToastProvider } from './contexts/ToastContext';
@@ -75,6 +75,32 @@ const MainAppContent: React.FC = () => {
   const { isCollapsed } = useSidebar();
   const [activeTab, setActiveTab] = useState('dashboard');
 
+  // Hash-based navigation
+  useEffect(() => {
+    const handleHashChange = () => {
+      const hash = window.location.hash.replace('#', '');
+      if (hash && ['dashboard', 'salary', 'overtime', 'calendar', 'leaves', 'reports', 'settings', 'calculators'].includes(hash)) {
+        setActiveTab(hash);
+      }
+    };
+
+    // İlk yükleme
+    handleHashChange();
+
+    // Hash değişikliklerini dinle
+    window.addEventListener('hashchange', handleHashChange);
+    return () => window.removeEventListener('hashchange', handleHashChange);
+  }, []);
+
+  // ActiveTab değiştiğinde hash'i güncelle
+  useEffect(() => {
+    if (activeTab !== 'dashboard') {
+      window.location.hash = `#${activeTab}`;
+    } else {
+      window.location.hash = '';
+    }
+  }, [activeTab]);
+
   if (isLoading) {
     return (
       <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
@@ -90,7 +116,7 @@ const MainAppContent: React.FC = () => {
   const renderActiveComponent = () => {
     switch (activeTab) {
       case 'dashboard':
-        return <Dashboard onNavigateToSettings={() => setActiveTab('settings')} />;
+        return <Dashboard />;
       case 'salary':
         return <SalaryManagement />;
       case 'overtime':
@@ -106,7 +132,7 @@ const MainAppContent: React.FC = () => {
       case 'calculators':
         return <CompensationCalculators />;
       default:
-        return <Dashboard onNavigateToSettings={() => setActiveTab('settings')} />;
+        return <Dashboard />;
     }
   };
 

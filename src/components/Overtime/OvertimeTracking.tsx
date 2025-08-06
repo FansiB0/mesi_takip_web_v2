@@ -1,14 +1,16 @@
 import React, { useState } from 'react';
-import { Plus, Clock, Calendar, Trash2, Edit } from 'lucide-react';
+import { Plus, Clock, Calendar, Trash2, Edit, Loader2 } from 'lucide-react';
 import { useData } from '../../contexts/DataContext';
 import { useAuth } from '../../contexts/AuthContext';
 import { useSettings } from '../../contexts/SettingsContext';
 import { calculateOvertimePay } from '../../utils/calculations';
+import { useToast } from '../../contexts/ToastContext';
 
 const OvertimeTracking: React.FC = () => {
-  const { overtimes, addOvertime, deleteOvertime } = useData();
+  const { overtimes, addOvertime, deleteOvertime, loadingStates } = useData();
   const { user } = useAuth();
   const { settings } = useSettings();
+  const { showSuccess, showError } = useToast();
   const [showAddForm, setShowAddForm] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [formData, setFormData] = useState({
@@ -20,8 +22,9 @@ const OvertimeTracking: React.FC = () => {
 
   // Filter overtimes for current user
   const userOvertimes = overtimes.filter(overtime => overtime.userId === user?.id);
+  const isLoading = loadingStates.overtimes.isLoading;
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!user) return;
     
@@ -40,14 +43,28 @@ const OvertimeTracking: React.FC = () => {
       totalPayment
     };
     
-    addOvertime(newOvertime);
-    setShowAddForm(false);
-    setFormData({
-      date: '',
-      hours: '',
-      overtimeType: 'normal',
-      hourlyRate: settings.salary.defaultHourlyRate || '150.00'
-    });
+    const result = await addOvertime(newOvertime);
+    if (result.success) {
+      showSuccess('Mesai başarıyla eklendi!');
+      setShowAddForm(false);
+      setFormData({
+        date: '',
+        hours: '',
+        overtimeType: 'normal',
+        hourlyRate: settings.salary.defaultHourlyRate || '150.00'
+      });
+    } else {
+      showError(result.error || 'Mesai eklenirken hata oluştu');
+    }
+  };
+
+  const handleDeleteOvertime = async (id: string) => {
+    const result = await deleteOvertime(id);
+    if (result.success) {
+      showSuccess('Mesai başarıyla silindi!');
+    } else {
+      showError(result.error || 'Mesai silinirken hata oluştu');
+    }
   };
 
   const getOvertimeTypeLabel = (type: string) => {
@@ -214,7 +231,7 @@ const OvertimeTracking: React.FC = () => {
                     </td>
                     <td className="py-3 px-4">
                       <button
-                        onClick={() => deleteOvertime(overtime.id)}
+                        onClick={() => handleDeleteOvertime(overtime.id)}
                         className="text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300"
                       >
                         <Trash2 className="h-4 w-4" />

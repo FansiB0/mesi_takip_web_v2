@@ -19,6 +19,13 @@ interface UserSettings {
     holidayReminder: boolean;
     emailNotifications: boolean;
     pushNotifications: boolean;
+    systemUpdates: boolean;
+    securityAlerts: boolean;
+    performanceReports: boolean;
+    weeklySummary: boolean;
+    monthlyReport: boolean;
+    birthdayReminders: boolean;
+    workAnniversary: boolean;
   };
   salary: {
     defaultNetSalary: string;
@@ -34,12 +41,18 @@ interface UserSettings {
     language: 'tr' | 'en';
     dateFormat: string;
     numberFormat: string;
+    fontSize: 'small' | 'medium' | 'large';
+    colorScheme: 'blue' | 'green' | 'purple' | 'orange';
+    compactMode: boolean;
+    showAnimations: boolean;
+    sidebarCollapsed: boolean;
+    dashboardLayout: 'grid' | 'list' | 'compact';
   };
 }
 
 interface SettingsContextType {
   settings: UserSettings;
-  updateSettings: (section: keyof UserSettings, data: Partial<UserSettings[keyof UserSettings]>) => void;
+  updateSettings: (section: keyof UserSettings, data: Partial<UserSettings[keyof UserSettings]>) => Promise<void>;
   updateAppearance: (appearance: Partial<UserSettings['appearance']>) => void;
   applyTheme: () => void;
   isNewUser: boolean;
@@ -63,7 +76,14 @@ const defaultSettings: UserSettings = {
     leaveStatus: false,
     holidayReminder: false,
     emailNotifications: false,
-    pushNotifications: false
+    pushNotifications: false,
+    systemUpdates: false,
+    securityAlerts: false,
+    performanceReports: false,
+    weeklySummary: false,
+    monthlyReport: false,
+    birthdayReminders: false,
+    workAnniversary: false
   },
   salary: {
     defaultNetSalary: '',
@@ -78,7 +98,13 @@ const defaultSettings: UserSettings = {
     theme: 'light',
     language: 'tr',
     dateFormat: 'DD/MM/YYYY',
-    numberFormat: 'tr-TR'
+    numberFormat: 'tr-TR',
+    fontSize: 'medium',
+    colorScheme: 'blue',
+    compactMode: false,
+    showAnimations: true,
+    sidebarCollapsed: false,
+    dashboardLayout: 'grid'
   }
 };
 
@@ -129,7 +155,14 @@ export const SettingsProvider: React.FC<SettingsProviderProps> = ({ children }) 
                 leaveStatus: firebaseSettings.notifications?.leave || defaultSettings.notifications.leaveStatus,
                 holidayReminder: firebaseSettings.notifications?.salary || defaultSettings.notifications.holidayReminder,
                 emailNotifications: firebaseSettings.notifications?.email || defaultSettings.notifications.emailNotifications,
-                pushNotifications: firebaseSettings.notifications?.push || defaultSettings.notifications.pushNotifications
+                pushNotifications: firebaseSettings.notifications?.push || defaultSettings.notifications.pushNotifications,
+                systemUpdates: firebaseSettings.notifications?.systemUpdates || defaultSettings.notifications.systemUpdates,
+                securityAlerts: firebaseSettings.notifications?.securityAlerts || defaultSettings.notifications.securityAlerts,
+                performanceReports: firebaseSettings.notifications?.performanceReports || defaultSettings.notifications.performanceReports,
+                weeklySummary: firebaseSettings.notifications?.weeklySummary || defaultSettings.notifications.weeklySummary,
+                monthlyReport: firebaseSettings.notifications?.monthlyReport || defaultSettings.notifications.monthlyReport,
+                birthdayReminders: firebaseSettings.notifications?.birthdayReminders || defaultSettings.notifications.birthdayReminders,
+                workAnniversary: firebaseSettings.notifications?.workAnniversary || defaultSettings.notifications.workAnniversary
               },
               salary: {
                 defaultNetSalary: firebaseSettings.salary?.defaultNetSalary || defaultSettings.salary.defaultNetSalary,
@@ -144,7 +177,13 @@ export const SettingsProvider: React.FC<SettingsProviderProps> = ({ children }) 
                 theme: (firebaseSettings.theme === 'system' ? 'auto' : firebaseSettings.theme) || defaultSettings.appearance.theme,
                 language: firebaseSettings.language || defaultSettings.appearance.language,
                 dateFormat: defaultSettings.appearance.dateFormat,
-                numberFormat: defaultSettings.appearance.numberFormat
+                numberFormat: defaultSettings.appearance.numberFormat,
+                fontSize: firebaseSettings.fontSize || defaultSettings.appearance.fontSize,
+                colorScheme: firebaseSettings.colorScheme || defaultSettings.appearance.colorScheme,
+                compactMode: firebaseSettings.compactMode || defaultSettings.appearance.compactMode,
+                showAnimations: firebaseSettings.showAnimations || defaultSettings.appearance.showAnimations,
+                sidebarCollapsed: firebaseSettings.sidebarCollapsed || defaultSettings.appearance.sidebarCollapsed,
+                dashboardLayout: firebaseSettings.dashboardLayout || defaultSettings.appearance.dashboardLayout
               }
             };
             setSettings(convertedSettings);
@@ -267,7 +306,14 @@ export const SettingsProvider: React.FC<SettingsProviderProps> = ({ children }) 
             overtime: newSettings.notifications.overtimeApproval,
             leave: newSettings.notifications.leaveStatus,
             email: newSettings.notifications.emailNotifications,
-            push: newSettings.notifications.pushNotifications
+            push: newSettings.notifications.pushNotifications,
+            systemUpdates: newSettings.notifications.systemUpdates,
+            securityAlerts: newSettings.notifications.securityAlerts,
+            performanceReports: newSettings.notifications.performanceReports,
+            weeklySummary: newSettings.notifications.weeklySummary,
+            monthlyReport: newSettings.notifications.monthlyReport,
+            birthdayReminders: newSettings.notifications.birthdayReminders,
+            workAnniversary: newSettings.notifications.workAnniversary
           };
         }
         
@@ -290,6 +336,12 @@ export const SettingsProvider: React.FC<SettingsProviderProps> = ({ children }) 
         if (section === 'appearance') {
           firebaseUpdates.theme = newSettings.appearance.theme === 'auto' ? 'system' : newSettings.appearance.theme;
           firebaseUpdates.language = newSettings.appearance.language;
+          firebaseUpdates.fontSize = newSettings.appearance.fontSize;
+          firebaseUpdates.colorScheme = newSettings.appearance.colorScheme;
+          firebaseUpdates.compactMode = newSettings.appearance.compactMode;
+          firebaseUpdates.showAnimations = newSettings.appearance.showAnimations;
+          firebaseUpdates.sidebarCollapsed = newSettings.appearance.sidebarCollapsed;
+          firebaseUpdates.dashboardLayout = newSettings.appearance.dashboardLayout;
         }
         
         if (Object.keys(firebaseUpdates).length > 0) {
@@ -310,13 +362,29 @@ export const SettingsProvider: React.FC<SettingsProviderProps> = ({ children }) 
     updateSettings('appearance', appearance);
   };
 
-  // Yeni kullanıcı kontrolü
+  // Yeni kullanıcı kontrolü ve maaş ayarları kontrolü
   useEffect(() => {
-    if (settings.salary.defaultNetSalary === '' && user?.id) {
-      setIsNewUser(true);
-      setShowSalarySetupPrompt(true);
+    if (user?.id) {
+      // Maaş bilgileri kontrolü
+      const hasSalaryInfo = settings.salary.defaultNetSalary && 
+                           settings.salary.defaultNetSalary.trim() !== '' &&
+                           parseFloat(settings.salary.defaultNetSalary) > 0;
+      
+      console.log('💰 Salary info check:', {
+        defaultNetSalary: settings.salary.defaultNetSalary,
+        hasSalaryInfo,
+        showSalarySetupPrompt
+      });
+      
+      if (!hasSalaryInfo) {
+        setIsNewUser(true);
+        setShowSalarySetupPrompt(true);
+      } else {
+        setIsNewUser(false);
+        setShowSalarySetupPrompt(false);
+      }
     }
-  }, [settings.salary.defaultNetSalary, user?.id]);
+  }, [settings.salary.defaultNetSalary, user?.id, showSalarySetupPrompt]);
 
   // Maaş ayarları prompt'unu kapat
   const dismissSalarySetupPrompt = () => {

@@ -46,10 +46,25 @@ export interface Leave {
   employeeId: string;
   startDate: string;
   endDate: string;
+  daysUsed: number;
   type: 'annual' | 'sick' | 'personal' | 'other';
   reason: string;
   status: 'pending' | 'approved' | 'rejected';
   userId: string;
+  createdAt?: Timestamp;
+  updatedAt?: Timestamp;
+}
+
+// Maaş veri tipi
+export interface Salary {
+  id?: string;
+  userId: string;
+  month: string;
+  year: number;
+  grossSalary: number;
+  netSalary: number;
+  bonus: number;
+  besDeduction: number;
   createdAt?: Timestamp;
   updatedAt?: Timestamp;
 }
@@ -244,20 +259,6 @@ export const leaveService = {
     }
   }
 };
-
-// Maaş veri tipi
-export interface Salary {
-  id?: string;
-  userId: string;
-  month: string;
-  year: number;
-  grossSalary: number;
-  netSalary: number;
-  bonus: number;
-  besDeduction: number;
-  createdAt?: Timestamp;
-  updatedAt?: Timestamp;
-}
 
 // Maaş işlemleri
 export const salaryService = {

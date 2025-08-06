@@ -12,12 +12,25 @@ export interface UserSettings {
   uid: string;
   theme: 'light' | 'dark' | 'system';
   language: 'tr' | 'en';
+  fontSize?: 'small' | 'medium' | 'large';
+  colorScheme?: 'blue' | 'green' | 'purple' | 'orange';
+  compactMode?: boolean;
+  showAnimations?: boolean;
+  sidebarCollapsed?: boolean;
+  dashboardLayout?: 'grid' | 'list' | 'compact';
   notifications: {
     email: boolean;
     push: boolean;
     overtime: boolean;
     leave: boolean;
     salary: boolean;
+    systemUpdates: boolean;
+    securityAlerts: boolean;
+    performanceReports: boolean;
+    weeklySummary: boolean;
+    monthlyReport: boolean;
+    birthdayReminders: boolean;
+    workAnniversary: boolean;
   };
   workingHours: {
     daily: number;
@@ -59,7 +72,14 @@ export const defaultSettings: Omit<UserSettings, 'uid' | 'createdAt' | 'updatedA
     push: true,
     overtime: true,
     leave: true,
-    salary: true
+    salary: true,
+    systemUpdates: true,
+    securityAlerts: true,
+    performanceReports: true,
+    weeklySummary: true,
+    monthlyReport: true,
+    birthdayReminders: true,
+    workAnniversary: true
   },
   workingHours: {
     daily: 8,

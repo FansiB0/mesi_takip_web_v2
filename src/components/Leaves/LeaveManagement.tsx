@@ -1,14 +1,16 @@
 import React, { useState } from 'react';
-import { Plus, Calendar, CheckCircle, XCircle, Clock, Trash2, Edit } from 'lucide-react';
+import { Plus, Calendar, CheckCircle, XCircle, Clock, Trash2, Edit, Loader2 } from 'lucide-react';
 import { useData } from '../../contexts/DataContext';
 import { useAuth } from '../../contexts/AuthContext';
 import { formatDate } from '../../utils/calculations';
 import { useSettings } from '../../contexts/SettingsContext';
+import { useToast } from '../../contexts/ToastContext';
 
 const LeaveManagement: React.FC = () => {
-  const { leaves, addLeave, deleteLeave } = useData();
+  const { leaves, addLeave, deleteLeave, loadingStates } = useData();
   const { user } = useAuth();
   const { settings } = useSettings();
+  const { showSuccess, showError } = useToast();
   const [showAddForm, setShowAddForm] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [formData, setFormData] = useState({
@@ -20,6 +22,7 @@ const LeaveManagement: React.FC = () => {
 
   // Filter leaves for current user
   const userLeaves = leaves.filter(leave => leave.userId === user?.id);
+  const isLoading = loadingStates.leaves.isLoading;
 
   const calculateDays = (startDate: string, endDate: string) => {
     if (!startDate || !endDate) return 0;
@@ -57,10 +60,18 @@ const LeaveManagement: React.FC = () => {
   const remainingDays = annualLeaveEntitlement - totalUsedDays;
 
   // handleSubmit fonksiyonunda status 'approved' olarak eklensin
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!user) return;
+    if (!user) {
+      showError('Kullanıcı girişi gerekli');
+      return;
+    }
+    
+    console.log('🔄 Submitting leave form with data:', formData);
+    
     const daysUsed = calculateDays(formData.startDate, formData.endDate);
+    console.log('📅 Calculated days:', daysUsed);
+    
     const newLeave = {
       userId: user.id,
       startDate: formData.startDate,
@@ -68,16 +79,46 @@ const LeaveManagement: React.FC = () => {
       daysUsed,
       status: 'approved' as const, // Onay beklemesin
       reason: formData.reason,
-      leaveType: formData.leaveType
+      leaveType: formData.leaveType,
+      type: (() => {
+        switch (formData.leaveType) {
+          case 'annual': return 'annual' as const;
+          case 'maternity': return 'sick' as const;
+          case 'bereavement': return 'sick' as const;
+          case 'administrative': return 'personal' as const;
+          case 'paid': return 'personal' as const;
+          case 'unpaid': return 'personal' as const;
+          default: return 'personal' as const;
+        }
+      })()
     };
-    addLeave(newLeave);
-    setShowAddForm(false);
-    setFormData({
-      startDate: '',
-      endDate: '',
-      reason: '',
-      leaveType: 'annual'
-    });
+    
+    console.log('📝 New leave object:', newLeave);
+    
+    const result = await addLeave(newLeave);
+    console.log('📊 Add leave result:', result);
+    
+    if (result.success) {
+      showSuccess('İzin talebi başarıyla oluşturuldu!');
+      setShowAddForm(false);
+      setFormData({
+        startDate: '',
+        endDate: '',
+        reason: '',
+        leaveType: 'annual'
+      });
+    } else {
+      showError(result.error || 'İzin eklenirken hata oluştu');
+    }
+  };
+
+  const handleDeleteLeave = async (id: string) => {
+    const result = await deleteLeave(id);
+    if (result.success) {
+      showSuccess('İzin talebi başarıyla silindi!');
+    } else {
+      showError(result.error || 'İzin silinirken hata oluştu');
+    }
   };
 
   const getStatusIcon = (status: string) => {
@@ -287,14 +328,15 @@ const LeaveManagement: React.FC = () => {
             </div>
             
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">İzin Nedeni</label>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                İzin Nedeni <span className="text-gray-500 text-xs">(Opsiyonel)</span>
+              </label>
               <textarea
                 value={formData.reason}
                 onChange={(e) => setFormData({ ...formData, reason: e.target.value })}
                 className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
                 rows={3}
-                placeholder="İzin nedeninizi açıklayın..."
-                required
+                placeholder="İzin nedeninizi açıklayabilirsiniz (opsiyonel)..."
               />
             </div>
             
@@ -303,14 +345,23 @@ const LeaveManagement: React.FC = () => {
                 type="button"
                 onClick={() => setShowAddForm(false)}
                 className="px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                disabled={isLoading}
               >
                 İptal
               </button>
               <button
                 type="submit"
-                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2"
+                disabled={isLoading}
               >
-                Talep Et
+                {isLoading ? (
+                  <>
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    <span>Ekleniyor...</span>
+                  </>
+                ) : (
+                  <span>Talep Et</span>
+                )}
               </button>
             </div>
           </form>
@@ -348,7 +399,7 @@ const LeaveManagement: React.FC = () => {
                     {getStatusText(leave.status)}
                   </span>
                   <button
-                    onClick={() => deleteLeave(leave.id)}
+                    onClick={() => handleDeleteLeave(leave.id)}
                     className="text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300"
                   >
                     <Trash2 className="h-4 w-4" />

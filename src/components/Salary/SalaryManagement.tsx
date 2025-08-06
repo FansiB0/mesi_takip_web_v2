@@ -1,34 +1,37 @@
 import React, { useState } from 'react';
-import { Plus, DollarSign, Calculator, Trash2, Edit } from 'lucide-react';
+import { Plus, DollarSign, Calculator, Trash2, Edit, Loader2 } from 'lucide-react';
 import { useData } from '../../contexts/DataContext';
 import { useAuth } from '../../contexts/AuthContext';
 import { useSettings } from '../../contexts/SettingsContext';
 import { calculateGrossSalary } from '../../utils/calculations';
 import { formatCurrency } from '../../utils/calculations';
+import { useToast } from '../../contexts/ToastContext';
 
 const SalaryManagement: React.FC = () => {
-  const { salaries, leaves, addSalary, deleteSalary } = useData();
+  const { salaries, leaves, addSalary, deleteSalary, loadingStates } = useData();
   const { user } = useAuth();
   const { settings } = useSettings();
+  const { showSuccess, showError } = useToast();
   const [showAddForm, setShowAddForm] = useState(false);
   const [showCalculator, setShowCalculator] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [calculatorNet, setCalculatorNet] = useState('24457');
-  const [calculatorBes, setCalculatorBes] = useState(settings.salary.besContribution || '500');
+  const [calculatorBes, setCalculatorBes] = useState('');
   const [formData, setFormData] = useState({
     month: 'Ocak',
     year: 2025,
     netSalary: '',
     bonus: '',
-    besDeduction: settings.salary.besContribution || '500'
+    besDeduction: ''
   });
 
   // Filter salaries for current user
   const userSalaries = salaries.filter(salary => salary.userId === user?.id);
+  const isLoading = loadingStates.salaries.isLoading;
 
   const handleCalculate = () => {
     const net = parseFloat(calculatorNet);
-    const bes = parseFloat(calculatorBes);
+    const bes = calculatorBes ? parseFloat(calculatorBes) : 0;
     
     // Brüt maaş hesaplama (doğru formül)
     const gross = calculateGrossSalary(net, bes);
@@ -63,6 +66,51 @@ const SalaryManagement: React.FC = () => {
       unpaidLeaveDays,
       unpaidLeaveDeduction
     };
+  };
+
+  const handleAddSalary = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!user) return;
+    
+    // Net maaştan brüt maaş hesaplama (yaklaşık)
+    const netSalary = parseFloat(formData.netSalary);
+    const besDeduction = formData.besDeduction ? parseFloat(formData.besDeduction) : 0;
+    // Brüt maaş = Net maaş + vergiler (yaklaşık %25 vergi oranı)
+    const grossSalary = (netSalary + besDeduction) / 0.75;
+    
+    const newSalary = {
+      userId: user.id,
+      month: formData.month,
+      year: formData.year,
+      netSalary,
+      grossSalary,
+      bonus: parseFloat(formData.bonus) || 0,
+      besDeduction
+    };
+    
+    const result = await addSalary(newSalary);
+    if (result.success) {
+      showSuccess('Maaş bilgisi başarıyla eklendi!');
+      setShowAddForm(false);
+      setFormData({
+        month: 'Ocak',
+        year: 2025,
+        netSalary: '',
+        bonus: '',
+        besDeduction: ''
+      });
+    } else {
+      showError(result.error || 'Maaş eklenirken hata oluştu');
+    }
+  };
+
+  const handleDeleteSalary = async (id: string) => {
+    const result = await deleteSalary(id);
+    if (result.success) {
+      showSuccess('Maaş bilgisi başarıyla silindi!');
+    } else {
+      showError(result.error || 'Maaş silinirken hata oluştu');
+    }
   };
 
   return (
@@ -115,7 +163,7 @@ const SalaryManagement: React.FC = () => {
                 value={calculatorBes}
                 onChange={(e) => setCalculatorBes(e.target.value)}
                 className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
-                placeholder={settings.salary.besContribution || "500"}
+                placeholder="0"
               />
             </div>
             <div className="flex items-end">
@@ -153,36 +201,7 @@ const SalaryManagement: React.FC = () => {
       {showAddForm && (
         <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
           <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Yeni Maaş Bilgisi Ekle</h3>
-          <form onSubmit={(e) => {
-            e.preventDefault();
-            if (!user) return;
-            
-            // Net maaştan brüt maaş hesaplama (yaklaşık)
-            const netSalary = parseFloat(formData.netSalary);
-            const besDeduction = parseFloat(formData.besDeduction);
-            // Brüt maaş = Net maaş + vergiler (yaklaşık %25 vergi oranı)
-            const grossSalary = (netSalary + besDeduction) / 0.75;
-            
-            const newSalary = {
-              userId: user.id,
-              month: formData.month,
-              year: formData.year,
-              netSalary,
-              grossSalary,
-              bonus: parseFloat(formData.bonus) || 0,
-              besDeduction
-            };
-            
-            addSalary(newSalary);
-            setShowAddForm(false);
-            setFormData({
-              month: 'Ocak',
-              year: 2025,
-              netSalary: '',
-              bonus: '',
-              besDeduction: settings.salary.besContribution || '500'
-            });
-          }} className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          <form onSubmit={handleAddSalary} className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Ay</label>
               <select
@@ -246,9 +265,10 @@ const SalaryManagement: React.FC = () => {
                 value={formData.besDeduction}
                 onChange={(e) => setFormData({ ...formData, besDeduction: e.target.value })}
                 className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
-                placeholder={settings.salary.besContribution || "500"}
+                placeholder="0"
               />
             </div>
+
             <div className="md:col-span-2 lg:col-span-3 flex justify-end space-x-3">
               <button
                 type="button"
@@ -314,7 +334,7 @@ const SalaryManagement: React.FC = () => {
                     </td>
                     <td className="py-3 px-4">
                       <button
-                        onClick={() => deleteSalary(salary.id)}
+                        onClick={() => handleDeleteSalary(salary.id)}
                         className="text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300"
                       >
                         <Trash2 className="h-4 w-4" />

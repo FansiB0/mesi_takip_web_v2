@@ -1,175 +1,216 @@
 # Maaş ve Çalışma Takip Sistemi
 
-Bu proje, çalışanların maaş, fazla mesai, izin ve tatil bilgilerini yönetebilecekleri modern bir web uygulamasıdır. React, TypeScript ve Tailwind CSS kullanılarak geliştirilmiştir.
+Modern, güvenli ve kullanıcı dostu bir maaş ve çalışma takip uygulaması. React, TypeScript, Tailwind CSS ve Firebase kullanılarak geliştirilmiştir.
 
 ## 🚀 Özellikler
 
-### 🔐 Kullanıcı Yönetimi
-- Kullanıcı kaydı ve girişi
-- Güvenli oturum yönetimi
-- Otomatik giriş (localStorage ile veri kalıcılığı)
-- Hatalı giriş uyarıları
+### 📊 Ana Özellikler
+- **Dashboard**: Maaş ve çalışma durumunun anlık özeti
+- **Maaş Yönetimi**: Brüt/Net maaş hesaplamaları ve takibi
+- **Fazla Mesai Takibi**: Mesai saatleri ve ücret hesaplamaları
+- **İzin Yönetimi**: Yıllık izin, hastalık izni ve diğer izin türleri
+- **Tatil Takvimi**: Resmi tatiller ve özel tatil günleri
+- **Raporlama**: Detaylı analiz ve raporlar
+- **Hesaplayıcılar**: Tazminat ve maaş hesaplayıcıları
 
-### 💰 Maaş Yönetimi
-- Net maaşa göre otomatik saatlik ücret hesaplama
-- Brüt/Net maaş hesaplayıcı
-- Maaş geçmişi ve BES/ikramiye yönetimi
-- Ücretsiz izin günleri maaştan otomatik düşülür
-- Aylık maaş tahminleri
+### 🔒 Güvenlik Özellikleri
+- **Gelişmiş Hata Yönetimi**: Kapsamlı hata yakalama ve kullanıcı dostu mesajlar
+- **Form Validasyonu**: Kapsamlı input doğrulama ve sanitization
+- **XSS Koruması**: Input sanitization ve güvenli veri işleme
+- **Rate Limiting**: API isteklerinde hız sınırlama
+- **Session Yönetimi**: Güvenli oturum kontrolü
+- **Password Strength**: Güçlü şifre kontrolü
 
-### ⏰ Fazla Mesai Takibi
-- Normal gün, hafta sonu, tatil mesaileri (1.5x, 2.0x)
-- Otomatik ücret hesaplama
-- Mesai geçmişi ve istatistikleri
-- Takvim entegrasyonu
+### ⚡ Performans Özellikleri
+- **Retry Mekanizması**: Otomatik yeniden deneme sistemi
+- **Memoization**: React.useMemo ve useCallback optimizasyonları
+- **Lazy Loading**: Komponent bazlı kod bölme
+- **Debounce/Throttle**: Kullanıcı etkileşimlerinde performans optimizasyonu
+- **Offline Support**: Temel offline işlevsellik
 
-### 📅 İzin Yönetimi
-- **İzin Türleri:**
-  - Ücretli İzin (Para Kesmez)
-  - Ücretsiz İzin (Para Keser)
-  - Yıllık İzin (Para Kesmez)
-  - Doğum İzni (Para Kesmez)
-  - Ölüm İzni (Para Kesmez)
-  - İdari İzin (Para Kesmez)
-- 1 yıl hizmet şartı (yıllık izin için)
-- İzin geçmişi ve onay durumları
-
-### 📊 Raporlar ve Analiz
-- Aylık gelir trendleri
-- Yıllık maaş karşılaştırmaları
-- Fazla mesai istatistikleri
-- İzin kullanım raporları
-- Veri dışa aktarma
-
-### 🎨 Kullanıcı Arayüzü
-- Modern ve responsive tasarım
-- Karanlık/Aydınlık tema desteği
-- YouTube tarzı açılır/kapanır sidebar
-- Mobil uyumlu tasarım
-- Türkçe arayüz
-
-### 📅 Takvim ve Tatiller
-- Türkiye resmi tatilleri
-- İzin ve mesai görselleştirmesi
-- Aylık/haftalık görünüm
-- Etkinlik renk kodlaması
+### 🎨 UX/UI İyileştirmeleri
+- **Loading States**: Kapsamlı yükleme durumları
+- **Error Boundaries**: Hata sınırları ve kurtarma mekanizmaları
+- **Empty States**: Boş durumlar için kullanıcı dostu arayüzler
+- **Responsive Design**: Tüm cihazlarda mükemmel görünüm
+- **Dark Mode**: Karanlık tema desteği
+- **Toast Notifications**: Kullanıcı bildirimleri
 
 ## 🛠️ Teknolojiler
 
-- **Frontend:** React 18, TypeScript
-- **Styling:** Tailwind CSS
-- **Icons:** Lucide React
-- **Build Tool:** Vite
-- **Deployment:** Vercel
+### Frontend
+- **React 18**: Modern React özellikleri
+- **TypeScript**: Tip güvenliği
+- **Tailwind CSS**: Utility-first CSS framework
+- **Lucide React**: Modern ikonlar
+- **Vite**: Hızlı build tool
+
+### Backend & Veritabanı
+- **Firebase**: Backend as a Service
+- **Firestore**: NoSQL veritabanı
+- **Firebase Auth**: Kimlik doğrulama
+- **Firebase Hosting**: Web hosting
+
+### Geliştirme Araçları
+- **ESLint**: Kod kalitesi
+- **Prettier**: Kod formatı
+- **TypeScript**: Tip kontrolü
 
 ## 📦 Kurulum
 
 ### Gereksinimler
-- Node.js (v16 veya üzeri)
+- Node.js 18+ 
 - npm veya yarn
+- Firebase hesabı
 
 ### Adımlar
 
-1. **Projeyi klonlayın:**
+1. **Projeyi klonlayın**
 ```bash
-git clone https://github.com/FansiB0/mesai_takip_web.git
-cd mesai_takip_web
+git clone https://github.com/your-username/mesi_takip_web_V1.git
+cd mesi_takip_web_V1
 ```
 
-2. **Bağımlılıkları yükleyin:**
+2. **Bağımlılıkları yükleyin**
 ```bash
 npm install
 ```
 
-3. **Geliştirme sunucusunu başlatın:**
+3. **Firebase yapılandırması**
+```bash
+# Firebase projenizi oluşturun ve config bilgilerini alın
+# src/config/firebase.ts dosyasını güncelleyin
+```
+
+4. **Geliştirme sunucusunu başlatın**
 ```bash
 npm run dev
 ```
 
-4. **Tarayıcınızda açın:**
+5. **Production build**
+```bash
+npm run build
 ```
-http://localhost:5173
+
+## 🔧 Yapılandırma
+
+### Firebase Kurulumu
+1. [Firebase Console](https://console.firebase.google.com/)'da yeni proje oluşturun
+2. Authentication'ı etkinleştirin (Email/Password)
+3. Firestore Database'i oluşturun
+4. Proje ayarlarından config bilgilerini alın
+5. `src/config/firebase.ts` dosyasını güncelleyin
+
+### Environment Variables
+```env
+VITE_FIREBASE_API_KEY=your_api_key
+VITE_FIREBASE_AUTH_DOMAIN=your_auth_domain
+VITE_FIREBASE_PROJECT_ID=your_project_id
+VITE_FIREBASE_STORAGE_BUCKET=your_storage_bucket
+VITE_FIREBASE_MESSAGING_SENDER_ID=your_sender_id
+VITE_FIREBASE_APP_ID=your_app_id
 ```
 
-## 🚀 Canlı Demo
-
-Proje Vercel'de yayınlanmıştır: [Canlı Demo](https://mesai-takip-web.vercel.app)
- GitHub Pages: https://fansib0.github.io/mesi_takip_web_V1/
-
-## 📋 Kullanım
-
-### İlk Kurulum
-1. Uygulamaya kayıt olun
-2. Ayarlar bölümünden maaş bilgilerinizi girin
-3. Varsayılan net maaşınızı belirleyin
-4. Günlük çalışma saatlerinizi ayarlayın
-
-### Maaş Hesaplama
-- **Saatlik Ücret:** `Net Maaş / (Günlük Saat × 30)`
-- **Örnek:** 30.000₺ net maaş, günde 7.5 saat
-- **Hesaplama:** 30.000 / (7.5 × 30) = 133.33₺/saat
-
-### İzin Yönetimi
-- Ücretsiz izinler otomatik olarak maaştan düşülür
-- Günlük kesinti: `Net Maaş / 30`
-- Yıllık izin hakkı 1 yıl hizmet sonrası aktif olur
-
-### Fazla Mesai
-- Normal gün: 1.5x ücret
-- Hafta sonu/Tatil: 2.0x ücret
-- Otomatik hesaplama
-
-## 🏗️ Proje Yapısı
+## 📁 Proje Yapısı
 
 ```
 src/
-├── components/          # React bileşenleri
-│   ├── Auth/           # Kimlik doğrulama
-│   ├── Dashboard/      # Ana sayfa
-│   ├── Layout/         # Sayfa düzeni
-│   ├── Settings/       # Ayarlar
-│   ├── Salary/         # Maaş yönetimi
-│   ├── Overtime/       # Fazla mesai
-│   ├── Leaves/         # İzin yönetimi
-│   ├── Reports/        # Raporlar
-│   └── Calendar/       # Takvim
-├── contexts/           # React Context API
-├── types/              # TypeScript tipleri
+├── components/          # React komponentleri
+│   ├── Auth/           # Kimlik doğrulama komponentleri
+│   ├── Dashboard/      # Dashboard komponentleri
+│   ├── Layout/         # Layout komponentleri
+│   ├── Salary/         # Maaş yönetimi komponentleri
+│   ├── Overtime/       # Fazla mesai komponentleri
+│   ├── Leaves/         # İzin yönetimi komponentleri
+│   ├── Reports/        # Raporlama komponentleri
+│   ├── Settings/       # Ayarlar komponentleri
+│   └── Calculators/    # Hesaplayıcı komponentleri
+├── contexts/           # React Context'leri
+├── services/           # API servisleri
+├── types/              # TypeScript tip tanımları
 ├── utils/              # Yardımcı fonksiyonlar
-└── main.tsx           # Uygulama girişi
+│   ├── calculations.ts # Hesaplama fonksiyonları
+│   ├── validation.ts   # Form validasyonu
+│   ├── errorHandler.ts # Hata yönetimi
+│   └── security.ts     # Güvenlik fonksiyonları
+└── config/             # Yapılandırma dosyaları
 ```
 
-## 🔧 Geliştirme
+## 🔄 Yeni Özellikler (v2.0)
 
-### Komutlar
+### Hata Yönetimi
+- ✅ Kapsamlı hata yakalama sistemi
+- ✅ Retry mekanizması
+- ✅ Kullanıcı dostu hata mesajları
+- ✅ Error boundaries
+
+### Form Validasyonu
+- ✅ Real-time form validasyonu
+- ✅ Input sanitization
+- ✅ Kapsamlı doğrulama kuralları
+- ✅ Hata mesajları
+
+### Performans
+- ✅ React.memo optimizasyonları
+- ✅ useMemo ve useCallback kullanımı
+- ✅ Lazy loading
+- ✅ Debounce/throttle
+
+### UX/UI
+- ✅ Loading states
+- ✅ Empty states
+- ✅ Error displays
+- ✅ Responsive design
+- ✅ Dark mode
+
+### Güvenlik
+- ✅ XSS koruması
+- ✅ Input sanitization
+- ✅ Rate limiting
+- ✅ Password strength validation
+
+## 🚀 Deployment
+
+### Firebase Hosting
 ```bash
-npm run dev          # Geliştirme sunucusu
-npm run build        # Production build
-npm run preview      # Build önizleme
-npm run lint         # Kod kontrolü
+npm run build
+firebase deploy
 ```
 
-### Veri Kalıcılığı
-- Tüm veriler localStorage'da saklanır
-- Oturum bilgileri otomatik yüklenir
-- Ayarlar ve kullanıcı verileri kalıcı
-
-## 📝 Lisans
-
-Bu proje MIT lisansı altında lisanslanmıştır.
+### Vercel
+```bash
+npm run build
+vercel --prod
+```
 
 ## 🤝 Katkıda Bulunma
 
 1. Fork yapın
-2. Feature branch oluşturun (`git checkout -b feature/AmazingFeature`)
-3. Değişikliklerinizi commit edin (`git commit -m 'Add some AmazingFeature'`)
-4. Branch'inizi push edin (`git push origin feature/AmazingFeature`)
+2. Feature branch oluşturun (`git checkout -b feature/amazing-feature`)
+3. Commit yapın (`git commit -m 'Add amazing feature'`)
+4. Push yapın (`git push origin feature/amazing-feature`)
 5. Pull Request oluşturun
 
-## 📞 İletişim
+## 📝 Lisans
 
-Proje Sahibi: [GitHub Profili](https://github.com/FansiB0)
+Bu proje MIT lisansı altında lisanslanmıştır. Detaylar için `LICENSE` dosyasına bakın.
+
+## 🆘 Destek
+
+Herhangi bir sorun yaşarsanız:
+1. [Issues](https://github.com/your-username/mesi_takip_web_V1/issues) sayfasını kontrol edin
+2. Yeni issue oluşturun
+3. Email ile iletişime geçin: support@example.com
+
+## 🔮 Gelecek Planları
+
+- [ ] PWA desteği
+- [ ] Mobile app
+- [ ] Advanced analytics
+- [ ] Multi-language support
+- [ ] Advanced reporting
+- [ ] Integration APIs
 
 ---
 
-**Not:** Bu uygulama demo amaçlı geliştirilmiştir. Gerçek iş ortamında kullanmadan önce güvenlik ve veri doğrulama önlemleri alınmalıdır.
+**Not**: Bu proje aktif geliştirme aşamasındadır. Yeni özellikler ve iyileştirmeler düzenli olarak eklenmektedir.

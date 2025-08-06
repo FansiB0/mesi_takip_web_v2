@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
-import { Eye, EyeOff, Mail, Lock } from 'lucide-react';
+import { Mail, Lock, Eye, EyeOff, User } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
+import { useToast } from '../../contexts/ToastContext';
 
 interface LoginFormProps {
   onSwitchToRegister: () => void;
@@ -14,8 +15,7 @@ const LoginForm: React.FC<LoginFormProps> = ({ onSwitchToRegister }) => {
   const [emailError, setEmailError] = useState(false);
   const [passwordError, setPasswordError] = useState(false);
   const { login, isLoading } = useAuth();
-
-
+  const { showSuccess, showError } = useToast();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -24,15 +24,21 @@ const LoginForm: React.FC<LoginFormProps> = ({ onSwitchToRegister }) => {
     setPasswordError(false);
     
     if (!email || !password) {
-      setError('Lütfen tüm alanları doldurun.');
+      const errorMsg = 'Lütfen tüm alanları doldurun.';
+      setError(errorMsg);
+      showError(errorMsg);
       if (!email) setEmailError(true);
       if (!password) setPasswordError(true);
       return;
     }
     
     const result = await login(email, password);
-    if (!result.success) {
-      setError(result.error || 'Giriş başarısız. Email veya şifre hatalı.');
+    if (result.success) {
+      showSuccess('Başarıyla giriş yapıldı!');
+    } else {
+      const errorMsg = result.error || 'Giriş başarısız. Email veya şifre hatalı.';
+      setError(errorMsg);
+      showError(errorMsg);
       // Hata türüne göre input alanlarını işaretle
       if (result.error?.includes('email') || result.error?.includes('Email')) {
         setEmailError(true);

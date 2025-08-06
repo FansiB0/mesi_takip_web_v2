@@ -1,19 +1,19 @@
 import { initializeApp } from 'firebase/app';
-import { getAuth, signInAnonymously, signOut } from 'firebase/auth';
-import { getFirestore } from 'firebase/firestore';
+import { getAuth, signInAnonymously, signOut, connectAuthEmulator } from 'firebase/auth';
+import { getFirestore, connectFirestoreEmulator } from 'firebase/firestore';
 
 console.log('🔍 Testing Firebase imports...');
 console.log('📦 Firebase modules loaded:', { initializeApp, getAuth, getFirestore });
 
-// Firebase konfigürasyonu
+// Firebase konfigürasyonu - Environment variables'dan al
 const firebaseConfig = {
-  apiKey: "AIzaSyAwuGiCbhncNHERF9vOV1wV5QiA3RXdgPk",
-  authDomain: "mesi-takip-web-v1.firebaseapp.com",
-  projectId: "mesi-takip-web-v1",
-  storageBucket: "mesi-takip-web-v1.firebasestorage.app",
-  messagingSenderId: "1061767802586",
-  appId: "1:1061767802586:web:edefb08963448c70b2bfe3",
-  measurementId: "G-75T6X9CPSP"
+  apiKey: import.meta.env.VITE_FIREBASE_API_KEY || "AIzaSyAwuGiCbhncNHERF9vOV1wV5QiA3RXdgPk",
+  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN || "mesi-takip-web-v1.firebaseapp.com",
+  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID || "mesi-takip-web-v1",
+  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET || "mesi-takip-web-v1.firebasestorage.app",
+  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID || "1061767802586",
+  appId: import.meta.env.VITE_FIREBASE_APP_ID || "1:1061767802586:web:edefb08963448c70b2bfe3",
+  measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID || "G-75T6X9CPSP"
 };
 
 console.log('⚙️ Firebase config:', firebaseConfig);
@@ -44,6 +44,25 @@ console.log('✅ Firebase Auth initialized:', auth);
 console.log('🗄️ Initializing Firestore...');
 export const db = getFirestore(app);
 console.log('✅ Firestore initialized:', db);
+
+// Development ortamında emulator kullan (şimdilik devre dışı)
+if (import.meta.env.DEV && false) {
+  console.log('🔧 Development mode detected, connecting to emulator...');
+  
+  try {
+    // Auth emulator
+    connectAuthEmulator(auth, 'http://localhost:9099');
+    console.log('✅ Auth emulator connected');
+    
+    // Firestore emulator
+    connectFirestoreEmulator(db, 'localhost', 8080);
+    console.log('✅ Firestore emulator connected');
+  } catch (error: any) {
+    console.warn('⚠️ Emulator connection failed, using production:', error.message);
+  }
+} else {
+  console.log('🌐 Using production Firebase services');
+}
 
 // Firebase'i global olarak export et (debug için)
 export const firebase = app;
