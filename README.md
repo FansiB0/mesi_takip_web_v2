@@ -1,6 +1,17 @@
-# Maaş ve Çalışma Takip Sistemi
+# Mesai Takip Web V2
 
 Modern, güvenli ve kullanıcı dostu bir maaş ve çalışma takip uygulaması. React, TypeScript, Tailwind CSS ve Firebase kullanılarak geliştirilmiştir.
+
+## 🌐 Canlı Demo
+**Uygulama:** https://abdulkadir06akcan.github.io/mesi_takip_web_v2
+
+## 🆕 V2.0 Yeni Özellikler
+- ✅ **Admin Paneli**: Kullanıcı yönetimi ve sistem logları
+- ✅ **Gelişmiş Hata Yönetimi**: Kapsamlı hata yakalama sistemi
+- ✅ **Form Validasyonu**: Real-time form doğrulama
+- ✅ **Performans Optimizasyonu**: React.memo ve useMemo kullanımı
+- ✅ **Güvenlik İyileştirmeleri**: XSS koruması ve input sanitization
+- ✅ **UX/UI İyileştirmeleri**: Loading states, empty states, responsive design
 
 ## 🚀 Özellikler
 

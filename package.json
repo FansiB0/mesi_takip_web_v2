@@ -1,9 +1,9 @@
 {
-  "name": "vite-react-typescript-starter",
+  "name": "mesi-takip-web-v2",
   "private": true,
-  "version": "0.0.0",
+  "version": "2.0.0",
   "type": "module",
-  "homepage": "https://mesi-takip-web-v1.vercel.app",
+  "homepage": "https://abdulkadir06akcan.github.io/mesi_takip_web_v2",
   "scripts": {
     "dev": "vite",
     "build": "vite build",
