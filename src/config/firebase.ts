@@ -25,7 +25,17 @@ try {
   console.log('🚀 About to call initializeApp...');
   console.log('🚀 initializeApp function:', typeof initializeApp);
   console.log('🚀 firebaseConfig:', firebaseConfig);
-  app = initializeApp(firebaseConfig);
+  
+  // GitHub Pages için özel konfigürasyon
+  const appConfig = {
+    ...firebaseConfig,
+    // CORS ve network sorunlarını önlemek için ek ayarlar
+    authDomain: window.location.hostname === 'localhost' 
+      ? firebaseConfig.authDomain 
+      : 'mesi-takip-web-v1.firebaseapp.com'
+  };
+  
+  app = initializeApp(appConfig);
   console.log('✅ Firebase app initialized:', app);
   console.log('✅ App name:', app.name);
   console.log('✅ App options:', app.options);
@@ -39,6 +49,14 @@ try {
 // Auth ve Firestore servislerini export et
 console.log('🔐 Initializing Firebase Auth...');
 export const auth = getAuth(app);
+
+// GitHub Pages için özel auth ayarları
+if (window.location.hostname !== 'localhost') {
+  // Production ortamında auth ayarlarını optimize et
+  auth.settings.appVerificationDisabledForTesting = false;
+  console.log('🌐 Production auth settings applied');
+}
+
 console.log('✅ Firebase Auth initialized:', auth);
 
 console.log('🗄️ Initializing Firestore...');

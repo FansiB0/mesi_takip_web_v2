@@ -10,12 +10,37 @@ import { auth, db } from '../config/firebase';
 import { User, ApiResponse } from '../types';
 import { localAuthService } from './localAuthService';
 import { logService } from './logService';
+import { testFirebaseForGitHubPages, checkCORSIssues } from '../utils/networkUtils';
 
 export interface AuthUser {
   uid: string;
   email: string | null;
   displayName?: string;
 }
+
+// Network bağlantısını kontrol et
+const checkNetworkConnection = async (): Promise<boolean> => {
+  try {
+    // GitHub Pages için özel Firebase bağlantı testi
+    const firebaseAvailable = await testFirebaseForGitHubPages();
+    if (!firebaseAvailable) {
+      console.log('⚠️ Firebase API not available');
+      return false;
+    }
+    
+    // CORS sorunlarını kontrol et
+    const corsOk = await checkCORSIssues();
+    if (!corsOk) {
+      console.log('⚠️ CORS issues detected');
+      return false;
+    }
+    
+    return true;
+  } catch (error) {
+    console.log('Network connection check failed:', error);
+    return false;
+  }
+};
 
 // Kullanıcı kaydı
 export const register = async (
@@ -30,6 +55,14 @@ export const register = async (
     console.log('Password length:', password.length);
     console.log('Auth object:', auth);
     console.log('Firebase app:', auth.app);
+    console.log('Current hostname:', window.location.hostname);
+    
+    // Network bağlantısını kontrol et
+    const isNetworkAvailable = await checkNetworkConnection();
+    if (!isNetworkAvailable) {
+      console.log('⚠️ Network connection not available, using localStorage fallback');
+      return await localAuthService.registerUser(email, password, name, startDate);
+    }
     
     const userCredential = await createUserWithEmailAndPassword(auth, email, password);
     console.log('✅ Firebase registration successful:', userCredential.user);
@@ -91,7 +124,10 @@ export const register = async (
     console.error('Error message:', error.message);
     
     // Firebase bağlantı hatası durumunda localStorage fallback
-    if (error.code === 'auth/network-request-failed' || error.message.includes('ERR_CONNECTION_RESET')) {
+    if (error.code === 'auth/network-request-failed' || 
+        error.message.includes('ERR_CONNECTION_RESET') ||
+        error.code === 'auth/too-many-requests' ||
+        error.message.includes('Failed to fetch')) {
       console.log('🔄 Using localStorage fallback for registration');
       if (name && startDate) {
         return await localAuthService.registerUser(email, password, name, startDate);
@@ -111,6 +147,14 @@ export const loginUser = async (email: string, password: string) => {
     console.log('=== FIREBASE LOGIN ATTEMPT ===');
     console.log('Email:', email);
     console.log('Auth object:', auth);
+    console.log('Current hostname:', window.location.hostname);
+    
+    // Network bağlantısını kontrol et
+    const isNetworkAvailable = await checkNetworkConnection();
+    if (!isNetworkAvailable) {
+      console.log('⚠️ Network connection not available, using localStorage fallback');
+      return await localAuthService.loginUser(email, password);
+    }
     
     const userCredential = await signInWithEmailAndPassword(auth, email, password);
     console.log('✅ Firebase login successful:', userCredential.user);
@@ -140,7 +184,10 @@ export const loginUser = async (email: string, password: string) => {
     console.error('Error message:', error.message);
     
     // Firebase bağlantı hatası durumunda localStorage fallback
-    if (error.code === 'auth/network-request-failed' || error.message.includes('ERR_CONNECTION_RESET')) {
+    if (error.code === 'auth/network-request-failed' || 
+        error.message.includes('ERR_CONNECTION_RESET') ||
+        error.code === 'auth/too-many-requests' ||
+        error.message.includes('Failed to fetch')) {
       console.log('🔄 Using localStorage fallback for login');
       return await localAuthService.loginUser(email, password);
     }

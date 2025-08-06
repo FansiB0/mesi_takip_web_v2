@@ -48,6 +48,46 @@ export const testFirebaseAPI = async (): Promise<boolean> => {
   }
 };
 
+// GitHub Pages için özel Firebase bağlantı testi
+export const testFirebaseForGitHubPages = async (): Promise<boolean> => {
+  try {
+    // Firebase Identity Toolkit API'sine test isteği
+    const apiKey = import.meta.env.VITE_FIREBASE_API_KEY || "AIzaSyAwuGiCbhncNHERF9vOV1wV5QiA3RXdgPk";
+    const response = await fetch(`https://identitytoolkit.googleapis.com/v1/accounts:lookup?key=${apiKey}`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Origin': window.location.origin,
+      },
+      body: JSON.stringify({ idToken: 'test_token_for_connection_check' }),
+    });
+    
+    // 400 veya 401 beklenen hatalar (geçersiz token), bu bağlantının çalıştığını gösterir
+    return response.status === 400 || response.status === 401;
+  } catch (error) {
+    console.warn('⚠️ GitHub Pages Firebase connection test failed:', error);
+    return false;
+  }
+};
+
+// CORS sorunlarını kontrol et
+export const checkCORSIssues = async (): Promise<boolean> => {
+  try {
+    const response = await fetch('https://identitytoolkit.googleapis.com/v1/accounts:lookup', {
+      method: 'OPTIONS',
+      headers: {
+        'Origin': window.location.origin,
+        'Access-Control-Request-Method': 'POST',
+        'Access-Control-Request-Headers': 'Content-Type',
+      },
+    });
+    return response.ok;
+  } catch (error) {
+    console.warn('⚠️ CORS check failed:', error);
+    return false;
+  }
+};
+
 // Retry mekanizması için exponential backoff
 export const exponentialBackoff = async <T>(
   operation: () => Promise<T>,
@@ -105,6 +145,32 @@ export const checkNetworkQuality = async (): Promise<'good' | 'poor' | 'offline'
     const responseTime = endTime - startTime;
 
     if (responseTime < 1000) {
+      return 'good';
+    } else {
+      return 'poor';
+    }
+  } catch (error) {
+    return 'offline';
+  }
+};
+
+// GitHub Pages için özel network quality check
+export const checkGitHubPagesNetworkQuality = async (): Promise<'good' | 'poor' | 'offline'> => {
+  if (!isOnline()) {
+    return 'offline';
+  }
+
+  try {
+    const startTime = performance.now();
+    const firebaseAvailable = await testFirebaseForGitHubPages();
+    const endTime = performance.now();
+    const responseTime = endTime - startTime;
+
+    if (!firebaseAvailable) {
+      return 'offline';
+    }
+
+    if (responseTime < 2000) {
       return 'good';
     } else {
       return 'poor';
