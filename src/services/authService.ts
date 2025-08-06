@@ -17,6 +17,12 @@ export interface AuthUser {
   displayName?: string;
 }
 
+// GitHub Pages için basitleştirilmiş auth service
+const isGitHubPages = () => {
+  return window.location.hostname === 'abdulkadir06akcan.github.io' || 
+         window.location.hostname === 'fansibo.github.io';
+};
+
 // Kullanıcı kaydı
 export const register = async (
   name: string, 
@@ -27,10 +33,14 @@ export const register = async (
   try {
     console.log('=== FIREBASE REGISTRATION ATTEMPT ===');
     console.log('Email:', email);
-    console.log('Password length:', password.length);
-    console.log('Auth object:', auth);
-    console.log('Firebase app:', auth.app);
     console.log('Current hostname:', window.location.hostname);
+    console.log('Is GitHub Pages:', isGitHubPages());
+    
+    // GitHub Pages'de localStorage fallback kullan
+    if (isGitHubPages()) {
+      console.log('🔄 Using localStorage fallback for GitHub Pages');
+      return await localAuthService.registerUser(email, password, name, startDate);
+    }
     
     const userCredential = await createUserWithEmailAndPassword(auth, email, password);
     console.log('✅ Firebase registration successful:', userCredential.user);
@@ -91,21 +101,12 @@ export const register = async (
     console.error('Error code:', error.code);
     console.error('Error message:', error.message);
     
-    // Firebase bağlantı hatası durumunda localStorage fallback
-    if (error.code === 'auth/network-request-failed' || 
-        error.message.includes('ERR_CONNECTION_RESET') ||
-        error.code === 'auth/too-many-requests' ||
-        error.message.includes('Failed to fetch')) {
-      console.log('🔄 Using localStorage fallback for registration');
-      if (name && startDate) {
-        return await localAuthService.registerUser(email, password, name, startDate);
-      }
-      return { success: false, error: 'Firebase bağlantısı kurulamadı. Lütfen internet bağlantınızı kontrol edin.' };
+    // Herhangi bir hata durumunda localStorage fallback
+    console.log('🔄 Using localStorage fallback due to error');
+    if (name && startDate) {
+      return await localAuthService.registerUser(email, password, name, startDate);
     }
-    
-    // Log başarısız kayıt
-    await logService.logUserRegistration('unknown', email, false, error.message);
-    return { success: false, error: error.message };
+    return { success: false, error: 'Kayıt işlemi başarısız oldu. Lütfen tekrar deneyin.' };
   }
 };
 
@@ -114,8 +115,14 @@ export const loginUser = async (email: string, password: string) => {
   try {
     console.log('=== FIREBASE LOGIN ATTEMPT ===');
     console.log('Email:', email);
-    console.log('Auth object:', auth);
     console.log('Current hostname:', window.location.hostname);
+    console.log('Is GitHub Pages:', isGitHubPages());
+    
+    // GitHub Pages'de localStorage fallback kullan
+    if (isGitHubPages()) {
+      console.log('🔄 Using localStorage fallback for GitHub Pages');
+      return await localAuthService.loginUser(email, password);
+    }
     
     const userCredential = await signInWithEmailAndPassword(auth, email, password);
     console.log('✅ Firebase login successful:', userCredential.user);
@@ -144,47 +151,9 @@ export const loginUser = async (email: string, password: string) => {
     console.error('Error code:', error.code);
     console.error('Error message:', error.message);
     
-    // Firebase bağlantı hatası durumunda localStorage fallback
-    if (error.code === 'auth/network-request-failed' || 
-        error.message.includes('ERR_CONNECTION_RESET') ||
-        error.code === 'auth/too-many-requests' ||
-        error.message.includes('Failed to fetch')) {
-      console.log('🔄 Using localStorage fallback for login');
-      return await localAuthService.loginUser(email, password);
-    }
-    
-    // Kullanıcı dostu hata mesajları
-    let userFriendlyError = error.message;
-    
-    switch (error.code) {
-      case 'auth/invalid-credential':
-        userFriendlyError = 'Email adresi veya şifre hatalı. Lütfen bilgilerinizi kontrol edin veya kayıt olun.';
-        break;
-      case 'auth/user-not-found':
-        userFriendlyError = 'Bu email adresi ile kayıtlı kullanıcı bulunamadı. Lütfen kayıt olun.';
-        break;
-      case 'auth/wrong-password':
-        userFriendlyError = 'Şifre hatalı. Lütfen şifrenizi kontrol edin.';
-        break;
-      case 'auth/email-already-in-use':
-        userFriendlyError = 'Bu email adresi zaten kullanılıyor. Lütfen farklı bir email adresi kullanın.';
-        break;
-      case 'auth/weak-password':
-        userFriendlyError = 'Şifre çok zayıf. En az 6 karakter kullanın.';
-        break;
-      case 'auth/invalid-email':
-        userFriendlyError = 'Geçersiz email adresi. Lütfen doğru formatta bir email adresi girin.';
-        break;
-      case 'auth/too-many-requests':
-        userFriendlyError = 'Çok fazla başarısız giriş denemesi. Lütfen bir süre bekleyin.';
-        break;
-      default:
-        userFriendlyError = 'Giriş yapılamadı. Lütfen bilgilerinizi kontrol edin.';
-    }
-    
-    // Log başarısız giriş
-    await logService.logUserLogin('unknown', email, false, userFriendlyError);
-    return { success: false, error: userFriendlyError };
+    // Herhangi bir hata durumunda localStorage fallback
+    console.log('🔄 Using localStorage fallback due to error');
+    return await localAuthService.loginUser(email, password);
   }
 };
 
