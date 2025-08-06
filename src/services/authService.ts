@@ -8,7 +8,6 @@ import {
 import { doc, setDoc, updateDoc, Timestamp } from 'firebase/firestore';
 import { auth, db } from '../config/firebase';
 import { User, ApiResponse } from '../types';
-import { localAuthService } from './localAuthService';
 import { logService } from './logService';
 
 export interface AuthUser {
@@ -16,13 +15,6 @@ export interface AuthUser {
   email: string | null;
   displayName?: string;
 }
-
-// GitHub Pages için basitleştirilmiş auth service
-const isGitHubPages = () => {
-  return window.location.hostname === 'abdulkadir06akcan.github.io' || 
-         window.location.hostname === 'fansibo.github.io' ||
-         window.location.hostname.includes('github.io');
-};
 
 // Kullanıcı kaydı
 export const register = async (
@@ -32,19 +24,10 @@ export const register = async (
   startDate: string
 ): Promise<ApiResponse<{ user: User }>> => {
   try {
-    console.log('=== AUTHENTICATION REGISTRATION ATTEMPT ===');
+    console.log('=== FIREBASE REGISTRATION ATTEMPT ===');
     console.log('Email:', email);
     console.log('Current hostname:', window.location.hostname);
-    console.log('Is GitHub Pages:', isGitHubPages());
     
-    // GitHub Pages'de sadece localStorage kullan
-    if (isGitHubPages()) {
-      console.log('🔄 Using localStorage for GitHub Pages');
-      return await localAuthService.registerUser(email, password, name, startDate);
-    }
-    
-    // Localhost'ta Firebase kullan
-    console.log('🔄 Using Firebase for localhost');
     const userCredential = await createUserWithEmailAndPassword(auth, email, password);
     console.log('✅ Firebase registration successful:', userCredential.user);
     console.log('User UID:', userCredential.user.uid);
@@ -100,35 +83,23 @@ export const register = async (
        }
      };
   } catch (error: any) {
-    console.error('❌ Registration error:', error);
+    console.error('❌ Firebase registration error:', error);
     console.error('Error code:', error.code);
     console.error('Error message:', error.message);
     
-    // Herhangi bir hata durumunda localStorage fallback
-    console.log('🔄 Using localStorage fallback due to error');
-    if (name && startDate) {
-      return await localAuthService.registerUser(email, password, name, startDate);
-    }
-    return { success: false, error: 'Kayıt işlemi başarısız oldu. Lütfen tekrar deneyin.' };
+    // Log başarısız kayıt
+    await logService.logUserRegistration('unknown', email, false, error.message);
+    return { success: false, error: error.message };
   }
 };
 
 // Kullanıcı girişi
 export const loginUser = async (email: string, password: string) => {
   try {
-    console.log('=== AUTHENTICATION LOGIN ATTEMPT ===');
+    console.log('=== FIREBASE LOGIN ATTEMPT ===');
     console.log('Email:', email);
     console.log('Current hostname:', window.location.hostname);
-    console.log('Is GitHub Pages:', isGitHubPages());
     
-    // GitHub Pages'de sadece localStorage kullan
-    if (isGitHubPages()) {
-      console.log('🔄 Using localStorage for GitHub Pages');
-      return await localAuthService.loginUser(email, password);
-    }
-    
-    // Localhost'ta Firebase kullan
-    console.log('🔄 Using Firebase for localhost');
     const userCredential = await signInWithEmailAndPassword(auth, email, password);
     console.log('✅ Firebase login successful:', userCredential.user);
     console.log('User UID:', userCredential.user.uid);
@@ -152,27 +123,19 @@ export const loginUser = async (email: string, password: string) => {
     
     return { success: true, user: userCredential.user };
   } catch (error: any) {
-    console.error('❌ Login error:', error);
+    console.error('❌ Firebase login error:', error);
     console.error('Error code:', error.code);
     console.error('Error message:', error.message);
     
-    // Herhangi bir hata durumunda localStorage fallback
-    console.log('🔄 Using localStorage fallback due to error');
-    return await localAuthService.loginUser(email, password);
+    // Log başarısız giriş
+    await logService.logUserLogin('unknown', email, false, error.message);
+    return { success: false, error: error.message };
   }
 };
 
 // Kullanıcı çıkışı
 export const logoutUser = async () => {
   try {
-    // GitHub Pages'de localStorage temizle
-    if (isGitHubPages()) {
-      localStorage.removeItem('currentUser');
-      localStorage.removeItem('userToken');
-      return { success: true };
-    }
-    
-    // Localhost'ta Firebase logout
     await signOut(auth);
     return { success: true };
   } catch (error: any) {
@@ -182,42 +145,11 @@ export const logoutUser = async () => {
 
 // Auth state listener
 export const onAuthStateChange = (callback: (user: FirebaseUser | null) => void) => {
-  // GitHub Pages'de localStorage listener
-  if (isGitHubPages()) {
-    const checkAuthState = () => {
-      const userData = localStorage.getItem('currentUser');
-      if (userData) {
-        const user = JSON.parse(userData);
-        callback(user as any);
-      } else {
-        callback(null);
-      }
-    };
-    
-    // İlk kontrol
-    checkAuthState();
-    
-    // Storage event listener
-    window.addEventListener('storage', checkAuthState);
-    
-    return () => {
-      window.removeEventListener('storage', checkAuthState);
-    };
-  }
-  
-  // Localhost'ta Firebase listener
   return onAuthStateChanged(auth, callback);
 };
 
 // Mevcut kullanıcıyı al
 export const getCurrentUser = () => {
-  // GitHub Pages'de localStorage'dan al
-  if (isGitHubPages()) {
-    const userData = localStorage.getItem('currentUser');
-    return userData ? JSON.parse(userData) : null;
-  }
-  
-  // Localhost'ta Firebase'den al
   return auth.currentUser;
 };
 
