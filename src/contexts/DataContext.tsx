@@ -30,7 +30,7 @@ import {
   connectionMonitor, 
   isOfflineMode, 
   toggleOfflineMode,
-  testFirebaseConnection 
+  testSupabaseConnection 
 } from '../utils/networkUtils';
 
 // Data context tipi
@@ -187,13 +187,13 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       return;
     }
     
-    // Firebase bağlantı testi
-    console.log('🌐 Testing Firebase connection...');
-    const isConnected = await testFirebaseConnection();
-    console.log('🌐 Firebase connection result:', isConnected);
+    // Supabase bağlantı testi
+    console.log('🌐 Testing Supabase connection...');
+    const isConnected = await testSupabaseConnection();
+    console.log('🌐 Supabase connection result:', isConnected);
     
     if (!isConnected) {
-      console.warn('⚠️ Firebase connection failed, switching to offline mode');
+      console.warn('⚠️ Supabase connection failed, switching to offline mode');
       toggleOfflineMode(true);
       loadFromLocalStorage();
       return;
@@ -218,8 +218,8 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         totalPayment: o.hours * 150,
         description: o.description,
         status: o.status || 'approved',
-        createdAt: o.createdAt?.toDate?.()?.toISOString() || new Date().toISOString(),
-        updatedAt: o.updatedAt?.toDate?.()?.toISOString()
+        createdAt: o.created_at || new Date().toISOString(),
+        updatedAt: o.updated_at || new Date().toISOString()
       }));
       setOvertimes(convertedOvertimes);
       updateLoadingState('overtimes', { isLoading: false });
@@ -250,8 +250,8 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
           }
         })(),
         type: l.type,
-        createdAt: l.createdAt?.toDate?.()?.toISOString() || new Date().toISOString(),
-        updatedAt: l.updatedAt?.toDate?.()?.toISOString()
+        createdAt: l.created_at || new Date().toISOString(),
+        updatedAt: l.updated_at || new Date().toISOString()
       }));
       console.log('✅ Converted leaves:', convertedLeaves);
       setLeaves(convertedLeaves);
@@ -271,8 +271,8 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         netSalary: s.netSalary,
         bonus: s.bonus,
         besDeduction: s.besDeduction,
-        createdAt: s.createdAt?.toDate?.()?.toISOString() || new Date().toISOString(),
-        updatedAt: s.updatedAt?.toDate?.()?.toISOString()
+        createdAt: s.created_at || new Date().toISOString(),
+        updatedAt: s.updated_at || new Date().toISOString()
       }));
       setSalaries(convertedSalaries);
       updateLoadingState('salaries', { isLoading: false });
@@ -333,7 +333,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   }, [user?.id]);
 
-  // Load data from Firebase when user changes
+      // Load data from Supabase when user changes
   useEffect(() => {
     if (user?.id) {
       loadData();
@@ -408,7 +408,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const newSalaryData = {
         ...sanitizedSalary,
         userId: user.id,
-        updatedAt: undefined // Firebase service expects Timestamp, not string
+        updatedAt: undefined // Supabase service expects string, not Timestamp
       };
       
       const id = await retryOperation(() => salaryService.add(newSalaryData));
@@ -507,8 +507,8 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       console.log('🔄 Adding overtime for user:', user.id);
       console.log('📝 Overtime data:', overtime);
       
-      // Firebase için uyumlu veri oluştur
-      const firebaseOvertime = {
+      // Supabase için uyumlu veri oluştur
+      const supabaseOvertime = {
         employeeId: user.id,
         date: overtime.date,
         hours: overtime.hours,
@@ -517,7 +517,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         userId: user.id
       };
       
-      const id = await retryOperation(() => overtimeService.add(firebaseOvertime));
+      const id = await retryOperation(() => overtimeService.add(supabaseOvertime));
       if (id) {
         const newOvertime: Overtime = {
           ...overtime,
@@ -609,7 +609,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       
       updateLoadingState('leaves', { isLoading: true, error: undefined });
       
-      // Firebase service için uyumlu veri oluştur
+      // Supabase service için uyumlu veri oluştur
       const newLeaveData = {
         employeeId: user.id,
         startDate: leave.startDate,

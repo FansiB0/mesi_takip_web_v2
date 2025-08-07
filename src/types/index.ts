@@ -27,7 +27,7 @@ export interface Salary {
 export interface Overtime {
   id: string;
   userId: string;
-  employeeId?: string; // Firebase uyumluluğu için
+  employeeId?: string; // Supabase uyumluluğu için
   date: string;
   hours: number;
   overtimeType: 'normal' | 'weekend' | 'holiday';
@@ -50,14 +50,14 @@ export interface Holiday {
 export interface Leave {
   id: string;
   userId: string;
-  employeeId?: string; // Firebase uyumluluğu için
+  employeeId?: string; // Supabase uyumluluğu için
   startDate: string;
   endDate: string;
   daysUsed: number;
   status: 'pending' | 'approved' | 'rejected';
   reason?: string;
   leaveType: 'paid' | 'unpaid' | 'annual' | 'maternity' | 'bereavement' | 'administrative';
-  type: 'annual' | 'sick' | 'personal' | 'other'; // Firebase uyumluluğu için
+  type: 'annual' | 'sick' | 'personal' | 'other'; // Supabase uyumluluğu için
   createdAt?: string;
   updatedAt?: string;
 }

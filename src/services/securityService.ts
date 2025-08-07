@@ -1,108 +1,284 @@
-import { 
-  updatePassword, 
-  deleteUser, 
-  reauthenticateWithCredential,
-  EmailAuthProvider,
-  User
-} from 'firebase/auth';
-import { auth } from '../config/firebase';
+import { supabase } from '../config/supabase';
+
+// Güvenlik ayarları veri tipi
+export interface SecuritySettings {
+  id?: string;
+  userId: string;
+  twoFactorEnabled: boolean;
+  twoFactorMethod: 'email' | 'sms' | 'app';
+  loginNotifications: boolean;
+  suspiciousActivityAlerts: boolean;
+  passwordChangeRequired: boolean;
+  lastPasswordChange: string;
+  failedLoginAttempts: number;
+  accountLocked: boolean;
+  lockoutUntil: string | null;
+  sessionTimeout: number; // dakika
+  maxConcurrentSessions: number;
+  ipWhitelist: string[];
+  created_at?: string;
+  updated_at?: string;
+}
+
+// Varsayılan güvenlik ayarları
+export const defaultSecuritySettings: Omit<SecuritySettings, 'id' | 'userId' | 'created_at' | 'updated_at'> = {
+  twoFactorEnabled: false,
+  twoFactorMethod: 'email',
+  loginNotifications: true,
+  suspiciousActivityAlerts: true,
+  passwordChangeRequired: false,
+  lastPasswordChange: new Date().toISOString(),
+  failedLoginAttempts: 0,
+  accountLocked: false,
+  lockoutUntil: null,
+  sessionTimeout: 30,
+  maxConcurrentSessions: 3,
+  ipWhitelist: []
+};
 
 // Güvenlik servisi
 export const securityService = {
-  // Şifre değiştir
-  async changePassword(currentPassword: string, newPassword: string): Promise<{ success: boolean; error?: string }> {
+  // Güvenlik ayarlarını oluştur
+  async createSecuritySettings(userId: string): Promise<boolean> {
     try {
-      const user = auth.currentUser;
-      if (!user || !user.email) {
-        return { success: false, error: 'Kullanıcı bulunamadı' };
-      }
+      const { error } = await supabase
+        .from('security_settings')
+        .insert({
+          userId,
+          ...defaultSecuritySettings,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        });
 
-      // Mevcut şifre ile yeniden doğrula
-      const credential = EmailAuthProvider.credential(user.email, currentPassword);
-      await reauthenticateWithCredential(user, credential);
-
-      // Yeni şifreyi ayarla
-      await updatePassword(user, newPassword);
-
-      return { success: true };
-    } catch (error: any) {
-      console.error('Şifre değiştirme hatası:', error);
-      
-      if (error.code === 'auth/wrong-password') {
-        return { success: false, error: 'Mevcut şifre hatalı' };
-      } else if (error.code === 'auth/weak-password') {
-        return { success: false, error: 'Yeni şifre çok zayıf' };
-      } else {
-        return { success: false, error: 'Şifre değiştirilirken hata oluştu' };
-      }
+      if (error) throw error;
+      return true;
+    } catch (error) {
+      console.error('Error creating security settings:', error);
+      return false;
     }
   },
 
-  // Hesabı sil
-  async deleteAccount(password: string): Promise<{ success: boolean; error?: string }> {
+  // Güvenlik ayarlarını getir
+  async getSecuritySettings(userId: string): Promise<SecuritySettings | null> {
     try {
-      const user = auth.currentUser;
-      if (!user || !user.email) {
-        return { success: false, error: 'Kullanıcı bulunamadı' };
+      const { data, error } = await supabase
+        .from('security_settings')
+        .select('*')
+        .eq('userId', userId)
+        .single();
+
+      if (error) {
+        if (error.code === 'PGRST116') return null; // Kayıt bulunamadı
+        throw error;
       }
 
-      // Şifre ile yeniden doğrula
-      const credential = EmailAuthProvider.credential(user.email, password);
-      await reauthenticateWithCredential(user, credential);
-
-      // Hesabı sil
-      await deleteUser(user);
-
-      return { success: true };
-    } catch (error: any) {
-      console.error('Hesap silme hatası:', error);
-      
-      if (error.code === 'auth/wrong-password') {
-        return { success: false, error: 'Şifre hatalı' };
-      } else {
-        return { success: false, error: 'Hesap silinirken hata oluştu' };
-      }
+      return data;
+    } catch (error) {
+      console.error('Error getting security settings:', error);
+      return null;
     }
   },
 
-  // İki faktörlü kimlik doğrulama durumunu kontrol et
-  async getTwoFactorStatus(): Promise<{ enabled: boolean; error?: string }> {
+  // Güvenlik ayarlarını güncelle
+  async updateSecuritySettings(userId: string, updates: Partial<SecuritySettings>): Promise<boolean> {
     try {
-      const user = auth.currentUser;
-      if (!user) {
-        return { enabled: false, error: 'Kullanıcı bulunamadı' };
-      }
+      const { error } = await supabase
+        .from('security_settings')
+        .update({
+          ...updates,
+          updated_at: new Date().toISOString()
+        })
+        .eq('userId', userId);
 
-      // Firebase Auth'da 2FA durumunu kontrol et
-      const multiFactor = user.multiFactor;
-      const enrolledFactors = multiFactor.enrolledFactors;
-
-      return { enabled: enrolledFactors.length > 0 };
-    } catch (error: any) {
-      console.error('2FA durum kontrolü hatası:', error);
-      return { enabled: false, error: '2FA durumu kontrol edilemedi' };
+      if (error) throw error;
+      return true;
+    } catch (error) {
+      console.error('Error updating security settings:', error);
+      return false;
     }
   },
 
-  // Aktif oturumları getir (simulated)
-  async getActiveSessions(): Promise<{ sessions: any[]; error?: string }> {
+  // 2FA durumunu kontrol et
+  async checkTwoFactorStatus(userId: string): Promise<boolean> {
     try {
-      // Bu Firebase Auth'da doğrudan desteklenmiyor, 
-      // gerçek uygulamada backend API kullanılır
-      const sessions = [
-        {
-          id: '1',
-          device: 'Chrome - Windows',
-          location: 'İstanbul, Türkiye',
-          lastActive: new Date().toISOString(),
-          current: true
+      const settings = await this.getSecuritySettings(userId);
+      return settings?.twoFactorEnabled || false;
+    } catch (error) {
+      console.error('Error checking 2FA status:', error);
+      return false;
+    }
+  },
+
+  // 2FA'yı etkinleştir
+  async enableTwoFactor(userId: string, method: 'email' | 'sms' | 'app'): Promise<boolean> {
+    try {
+      const success = await this.updateSecuritySettings(userId, {
+        twoFactorEnabled: true,
+        twoFactorMethod: method
+      });
+
+      if (success) {
+        console.log(`✅ 2FA enabled with method: ${method}`);
+      }
+
+      return success;
+    } catch (error) {
+      console.error('Error enabling 2FA:', error);
+      return false;
+    }
+  },
+
+  // 2FA'yı devre dışı bırak
+  async disableTwoFactor(userId: string): Promise<boolean> {
+    try {
+      const success = await this.updateSecuritySettings(userId, {
+        twoFactorEnabled: false
+      });
+
+      if (success) {
+        console.log('✅ 2FA disabled');
+      }
+
+      return success;
+    } catch (error) {
+      console.error('Error disabling 2FA:', error);
+      return false;
+    }
+  },
+
+  // Başarısız giriş denemesini kaydet
+  async recordFailedLogin(userId: string): Promise<boolean> {
+    try {
+      const settings = await this.getSecuritySettings(userId);
+      if (!settings) {
+        await this.createSecuritySettings(userId);
+      }
+
+      const currentAttempts = settings?.failedLoginAttempts || 0;
+      const newAttempts = currentAttempts + 1;
+      const maxAttempts = 5;
+      const lockoutDuration = 15; // dakika
+
+      let updates: Partial<SecuritySettings> = {
+        failedLoginAttempts: newAttempts
+      };
+
+      // Hesabı kilitle
+      if (newAttempts >= maxAttempts) {
+        const lockoutUntil = new Date();
+        lockoutUntil.setMinutes(lockoutUntil.getMinutes() + lockoutDuration);
+        
+        updates = {
+          ...updates,
+          accountLocked: true,
+          lockoutUntil: lockoutUntil.toISOString()
+        };
+      }
+
+      const success = await this.updateSecuritySettings(userId, updates);
+      return success;
+    } catch (error) {
+      console.error('Error recording failed login:', error);
+      return false;
+    }
+  },
+
+  // Başarılı girişi kaydet
+  async recordSuccessfulLogin(userId: string): Promise<boolean> {
+    try {
+      const success = await this.updateSecuritySettings(userId, {
+        failedLoginAttempts: 0,
+        accountLocked: false,
+        lockoutUntil: null
+      });
+
+      if (success) {
+        console.log('✅ Successful login recorded');
+      }
+
+      return success;
+    } catch (error) {
+      console.error('Error recording successful login:', error);
+      return false;
+    }
+  },
+
+  // Hesap kilitli mi kontrol et
+  async isAccountLocked(userId: string): Promise<boolean> {
+    try {
+      const settings = await this.getSecuritySettings(userId);
+      if (!settings) return false;
+
+      if (!settings.accountLocked) return false;
+
+      // Kilit süresi dolmuş mu kontrol et
+      if (settings.lockoutUntil) {
+        const lockoutTime = new Date(settings.lockoutUntil);
+        const now = new Date();
+        
+        if (now > lockoutTime) {
+          // Kilit süresi dolmuş, kilidi kaldır
+          await this.updateSecuritySettings(userId, {
+            accountLocked: false,
+            lockoutUntil: null,
+            failedLoginAttempts: 0
+          });
+          return false;
         }
-      ];
+      }
 
-      return { sessions };
-    } catch (error: any) {
-      console.error('Oturum bilgileri alınırken hata:', error);
-      return { sessions: [], error: 'Oturum bilgileri alınamadı' };
+      return true;
+    } catch (error) {
+      console.error('Error checking account lock status:', error);
+      return false;
+    }
+  },
+
+  // Şifre değişikliğini kaydet
+  async recordPasswordChange(userId: string): Promise<boolean> {
+    try {
+      const success = await this.updateSecuritySettings(userId, {
+        lastPasswordChange: new Date().toISOString(),
+        passwordChangeRequired: false
+      });
+
+      if (success) {
+        console.log('✅ Password change recorded');
+      }
+
+      return success;
+    } catch (error) {
+      console.error('Error recording password change:', error);
+      return false;
+    }
+  },
+
+  // Şifre değişikliği gerekli mi kontrol et
+  async isPasswordChangeRequired(userId: string): Promise<boolean> {
+    try {
+      const settings = await this.getSecuritySettings(userId);
+      return settings?.passwordChangeRequired || false;
+    } catch (error) {
+      console.error('Error checking password change requirement:', error);
+      return false;
+    }
+  },
+
+  // Şifre değişikliği gerekli olarak işaretle
+  async requirePasswordChange(userId: string): Promise<boolean> {
+    try {
+      const success = await this.updateSecuritySettings(userId, {
+        passwordChangeRequired: true
+      });
+
+      if (success) {
+        console.log('✅ Password change required');
+      }
+
+      return success;
+    } catch (error) {
+      console.error('Error requiring password change:', error);
+      return false;
     }
   }
 }; 

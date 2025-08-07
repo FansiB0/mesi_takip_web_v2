@@ -128,67 +128,67 @@ export const SettingsProvider: React.FC<SettingsProviderProps> = ({ children }) 
   const [showSalarySetupPrompt, setShowSalarySetupPrompt] = useState(false);
   const { user } = useAuth();
 
-  // Firebase'den ayarları yükle
+      // Supabase'den ayarları yükle
   useEffect(() => {
     const loadSettings = async () => {
       if (user?.id) {
         try {
-          console.log('🔄 Loading settings from Firebase for user:', user.id);
-          const firebaseSettings = await settingsService.getSettings(user.id);
-          
-          if (firebaseSettings) {
-            console.log('✅ Settings loaded from Firebase:', firebaseSettings);
-            // Firebase'den gelen ayarları bizim formatımıza dönüştür
+                  console.log('🔄 Loading settings from Supabase for user:', user.id);
+        const supabaseSettings = await settingsService.getSettings(user.id);
+        
+        if (supabaseSettings) {
+          console.log('✅ Settings loaded from Supabase:', supabaseSettings);
+          // Supabase'den gelen ayarları bizim formatımıza dönüştür
             const convertedSettings: UserSettings = {
               profile: {
-                name: firebaseSettings.profile?.name || user?.name || defaultSettings.profile.name,
-                email: firebaseSettings.profile?.email || user?.email || defaultSettings.profile.email,
-                phone: firebaseSettings.profile?.phone || defaultSettings.profile.phone,
-                department: firebaseSettings.profile?.department || defaultSettings.profile.department,
-                position: firebaseSettings.profile?.position || defaultSettings.profile.position,
-                startDate: firebaseSettings.profile?.startDate || user?.startDate || defaultSettings.profile.startDate,
-                employeeId: firebaseSettings.profile?.employeeId || defaultSettings.profile.employeeId
+                name: supabaseSettings.profile?.name || user?.name || defaultSettings.profile.name,
+                email: supabaseSettings.profile?.email || user?.email || defaultSettings.profile.email,
+                phone: supabaseSettings.profile?.phone || defaultSettings.profile.phone,
+                department: supabaseSettings.profile?.department || defaultSettings.profile.department,
+                position: supabaseSettings.profile?.position || defaultSettings.profile.position,
+                startDate: supabaseSettings.profile?.startDate || user?.startDate || defaultSettings.profile.startDate,
+                employeeId: supabaseSettings.profile?.employeeId || defaultSettings.profile.employeeId
               },
-              notifications: {
-                salaryReminder: firebaseSettings.notifications?.salary || defaultSettings.notifications.salaryReminder,
-                overtimeApproval: firebaseSettings.notifications?.overtime || defaultSettings.notifications.overtimeApproval,
-                leaveStatus: firebaseSettings.notifications?.leave || defaultSettings.notifications.leaveStatus,
-                holidayReminder: firebaseSettings.notifications?.salary || defaultSettings.notifications.holidayReminder,
-                emailNotifications: firebaseSettings.notifications?.email || defaultSettings.notifications.emailNotifications,
-                pushNotifications: firebaseSettings.notifications?.push || defaultSettings.notifications.pushNotifications,
-                systemUpdates: firebaseSettings.notifications?.systemUpdates || defaultSettings.notifications.systemUpdates,
-                securityAlerts: firebaseSettings.notifications?.securityAlerts || defaultSettings.notifications.securityAlerts,
-                performanceReports: firebaseSettings.notifications?.performanceReports || defaultSettings.notifications.performanceReports,
-                weeklySummary: firebaseSettings.notifications?.weeklySummary || defaultSettings.notifications.weeklySummary,
-                monthlyReport: firebaseSettings.notifications?.monthlyReport || defaultSettings.notifications.monthlyReport,
-                birthdayReminders: firebaseSettings.notifications?.birthdayReminders || defaultSettings.notifications.birthdayReminders,
-                workAnniversary: firebaseSettings.notifications?.workAnniversary || defaultSettings.notifications.workAnniversary
-              },
-              salary: {
-                defaultNetSalary: firebaseSettings.salary?.defaultNetSalary || defaultSettings.salary.defaultNetSalary,
-                defaultHourlyRate: firebaseSettings.salary?.defaultHourlyRate || defaultSettings.salary.defaultHourlyRate,
-                currency: firebaseSettings.salary?.currency || defaultSettings.salary.currency,
-                workingHoursPerDay: firebaseSettings.workingHours?.daily?.toString() || defaultSettings.salary.workingHoursPerDay,
-                workingDaysPerWeek: firebaseSettings.salary?.workingDaysPerWeek || defaultSettings.salary.workingDaysPerWeek,
-                annualLeaveEntitlement: firebaseSettings.salary?.annualLeaveEntitlement || defaultSettings.salary.annualLeaveEntitlement,
-                besContribution: firebaseSettings.salary?.besContribution || defaultSettings.salary.besContribution
-              },
-              appearance: {
-                theme: (firebaseSettings.theme === 'system' ? 'auto' : firebaseSettings.theme) || defaultSettings.appearance.theme,
-                language: firebaseSettings.language || defaultSettings.appearance.language,
-                dateFormat: defaultSettings.appearance.dateFormat,
-                numberFormat: defaultSettings.appearance.numberFormat,
-                fontSize: firebaseSettings.fontSize || defaultSettings.appearance.fontSize,
-                colorScheme: firebaseSettings.colorScheme || defaultSettings.appearance.colorScheme,
-                compactMode: firebaseSettings.compactMode || defaultSettings.appearance.compactMode,
-                showAnimations: firebaseSettings.showAnimations || defaultSettings.appearance.showAnimations,
-                sidebarCollapsed: firebaseSettings.sidebarCollapsed || defaultSettings.appearance.sidebarCollapsed,
-                dashboardLayout: firebaseSettings.dashboardLayout || defaultSettings.appearance.dashboardLayout
-              }
+                              notifications: {
+                  salaryReminder: supabaseSettings.notifications?.salary || defaultSettings.notifications.salaryReminder,
+                  overtimeApproval: supabaseSettings.notifications?.overtime || defaultSettings.notifications.overtimeApproval,
+                  leaveStatus: supabaseSettings.notifications?.leave || defaultSettings.notifications.leaveStatus,
+                  holidayReminder: supabaseSettings.notifications?.salary || defaultSettings.notifications.holidayReminder,
+                  emailNotifications: supabaseSettings.notifications?.email || defaultSettings.notifications.emailNotifications,
+                  pushNotifications: supabaseSettings.notifications?.push || defaultSettings.notifications.pushNotifications,
+                  systemUpdates: supabaseSettings.notifications?.systemUpdates || defaultSettings.notifications.systemUpdates,
+                  securityAlerts: supabaseSettings.notifications?.securityAlerts || defaultSettings.notifications.securityAlerts,
+                  performanceReports: supabaseSettings.notifications?.performanceReports || defaultSettings.notifications.performanceReports,
+                  weeklySummary: supabaseSettings.notifications?.weeklySummary || defaultSettings.notifications.weeklySummary,
+                  monthlyReport: supabaseSettings.notifications?.monthlyReport || defaultSettings.notifications.monthlyReport,
+                  birthdayReminders: supabaseSettings.notifications?.birthdayReminders || defaultSettings.notifications.birthdayReminders,
+                  workAnniversary: supabaseSettings.notifications?.workAnniversary || defaultSettings.notifications.workAnniversary
+                },
+                              salary: {
+                  defaultNetSalary: supabaseSettings.salary?.defaultNetSalary || defaultSettings.salary.defaultNetSalary,
+                  defaultHourlyRate: supabaseSettings.salary?.defaultHourlyRate || defaultSettings.salary.defaultHourlyRate,
+                  currency: supabaseSettings.salary?.currency || defaultSettings.salary.currency,
+                  workingHoursPerDay: supabaseSettings.workingHours?.daily?.toString() || defaultSettings.salary.workingHoursPerDay,
+                  workingDaysPerWeek: supabaseSettings.salary?.workingDaysPerWeek || defaultSettings.salary.workingDaysPerWeek,
+                  annualLeaveEntitlement: supabaseSettings.salary?.annualLeaveEntitlement || defaultSettings.salary.annualLeaveEntitlement,
+                  besContribution: supabaseSettings.salary?.besContribution || defaultSettings.salary.besContribution
+                },
+                appearance: {
+                  theme: (supabaseSettings.theme === 'system' ? 'auto' : supabaseSettings.theme) || defaultSettings.appearance.theme,
+                  language: supabaseSettings.language || defaultSettings.appearance.language,
+                  dateFormat: defaultSettings.appearance.dateFormat,
+                  numberFormat: defaultSettings.appearance.numberFormat,
+                  fontSize: supabaseSettings.fontSize || defaultSettings.appearance.fontSize,
+                  colorScheme: supabaseSettings.colorScheme || defaultSettings.appearance.colorScheme,
+                  compactMode: supabaseSettings.compactMode || defaultSettings.appearance.compactMode,
+                  showAnimations: supabaseSettings.showAnimations || defaultSettings.appearance.showAnimations,
+                  sidebarCollapsed: supabaseSettings.sidebarCollapsed || defaultSettings.appearance.sidebarCollapsed,
+                  dashboardLayout: supabaseSettings.dashboardLayout || defaultSettings.appearance.dashboardLayout
+                }
             };
             setSettings(convertedSettings);
                   } else {
-          console.log('⚠️ No Firebase settings found, using defaults');
+          console.log('⚠️ No Supabase settings found, using defaults');
           // Kullanıcı bilgilerini kullanarak varsayılan ayarları oluştur
           const userBasedSettings: UserSettings = {
             ...defaultSettings,
@@ -202,8 +202,8 @@ export const SettingsProvider: React.FC<SettingsProviderProps> = ({ children }) 
           setSettings(userBasedSettings);
         }
         } catch (error) {
-          console.error('❌ Error loading settings from Firebase:', error);
-          // Firebase hatası durumunda localStorage'dan yükle
+          console.error('❌ Error loading settings from Supabase:', error);
+          // Supabase hatası durumunda localStorage'dan yükle
           const savedSettings = localStorage.getItem('userSettings');
           if (savedSettings) {
             try {
@@ -278,18 +278,18 @@ export const SettingsProvider: React.FC<SettingsProviderProps> = ({ children }) 
     setSettings(newSettings);
     saveToLocalStorage(newSettings);
 
-    // Firebase'e kaydet
+            // Supabase'e kaydet
     if (user?.id) {
       try {
-        console.log('🔄 Saving settings to Firebase for user:', user.id);
+        console.log('🔄 Saving settings to Supabase for user:', user.id);
         console.log('📝 Section:', section);
         console.log('📝 Data:', data);
         
-        // Firebase formatına dönüştür
-        const firebaseUpdates: any = {};
+        // Supabase formatına dönüştür
+        const supabaseUpdates: any = {};
         
         if (section === 'profile') {
-          firebaseUpdates.profile = {
+          supabaseUpdates.profile = {
             name: newSettings.profile.name,
             email: newSettings.profile.email,
             phone: newSettings.profile.phone,
@@ -301,7 +301,7 @@ export const SettingsProvider: React.FC<SettingsProviderProps> = ({ children }) 
         }
         
         if (section === 'notifications') {
-          firebaseUpdates.notifications = {
+          supabaseUpdates.notifications = {
             salary: newSettings.notifications.salaryReminder,
             overtime: newSettings.notifications.overtimeApproval,
             leave: newSettings.notifications.leaveStatus,
@@ -318,7 +318,7 @@ export const SettingsProvider: React.FC<SettingsProviderProps> = ({ children }) 
         }
         
         if (section === 'salary') {
-          firebaseUpdates.salary = {
+          supabaseUpdates.salary = {
             defaultNetSalary: newSettings.salary.defaultNetSalary,
             defaultHourlyRate: newSettings.salary.defaultHourlyRate,
             currency: newSettings.salary.currency,
@@ -326,7 +326,7 @@ export const SettingsProvider: React.FC<SettingsProviderProps> = ({ children }) 
             annualLeaveEntitlement: newSettings.salary.annualLeaveEntitlement,
             besContribution: newSettings.salary.besContribution
           };
-          firebaseUpdates.workingHours = {
+          supabaseUpdates.workingHours = {
             daily: parseInt(newSettings.salary.workingHoursPerDay) || 8,
             weekly: parseInt(newSettings.salary.workingDaysPerWeek) * 8 || 40,
             monthly: parseInt(newSettings.salary.workingDaysPerWeek) * 8 * 4 || 160
@@ -334,26 +334,26 @@ export const SettingsProvider: React.FC<SettingsProviderProps> = ({ children }) 
         }
         
         if (section === 'appearance') {
-          firebaseUpdates.theme = newSettings.appearance.theme === 'auto' ? 'system' : newSettings.appearance.theme;
-          firebaseUpdates.language = newSettings.appearance.language;
-          firebaseUpdates.fontSize = newSettings.appearance.fontSize;
-          firebaseUpdates.colorScheme = newSettings.appearance.colorScheme;
-          firebaseUpdates.compactMode = newSettings.appearance.compactMode;
-          firebaseUpdates.showAnimations = newSettings.appearance.showAnimations;
-          firebaseUpdates.sidebarCollapsed = newSettings.appearance.sidebarCollapsed;
-          firebaseUpdates.dashboardLayout = newSettings.appearance.dashboardLayout;
+          supabaseUpdates.theme = newSettings.appearance.theme === 'auto' ? 'system' : newSettings.appearance.theme;
+          supabaseUpdates.language = newSettings.appearance.language;
+          supabaseUpdates.fontSize = newSettings.appearance.fontSize;
+          supabaseUpdates.colorScheme = newSettings.appearance.colorScheme;
+          supabaseUpdates.compactMode = newSettings.appearance.compactMode;
+          supabaseUpdates.showAnimations = newSettings.appearance.showAnimations;
+          supabaseUpdates.sidebarCollapsed = newSettings.appearance.sidebarCollapsed;
+          supabaseUpdates.dashboardLayout = newSettings.appearance.dashboardLayout;
         }
         
-        if (Object.keys(firebaseUpdates).length > 0) {
-          const success = await settingsService.updateSettings(user.id, firebaseUpdates);
+        if (Object.keys(supabaseUpdates).length > 0) {
+          const success = await settingsService.updateSettings(user.id, supabaseUpdates);
           if (success) {
-            console.log('✅ Settings saved to Firebase successfully');
+            console.log('✅ Settings saved to Supabase successfully');
           } else {
-            console.error('❌ Failed to save settings to Firebase');
+            console.error('❌ Failed to save settings to Supabase');
           }
         }
       } catch (error) {
-        console.error('❌ Error saving settings to Firebase:', error);
+        console.error('❌ Error saving settings to Supabase:', error);
       }
     }
   };

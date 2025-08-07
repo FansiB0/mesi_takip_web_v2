@@ -50,17 +50,23 @@ export const ERROR_MESSAGES = {
   }
 };
 
-// Firebase hata kodlarını ErrorType'a çevirme
-export const mapFirebaseError = (errorCode: string): ErrorType => {
+// Supabase hata kodlarını ErrorType'a çevirme
+export const mapSupabaseError = (errorCode: string): ErrorType => {
   const errorMap: Record<string, ErrorType> = {
-    'auth/network-request-failed': ErrorType.NETWORK,
-    'auth/invalid-email': ErrorType.VALIDATION,
-    'auth/weak-password': ErrorType.VALIDATION,
-    'auth/user-not-found': ErrorType.AUTHENTICATION,
-    'auth/wrong-password': ErrorType.AUTHENTICATION,
-    'auth/email-already-in-use': ErrorType.VALIDATION,
-    'auth/too-many-requests': ErrorType.AUTHENTICATION,
-    'auth/user-disabled': ErrorType.AUTHORIZATION,
+    'PGRST116': ErrorType.NOT_FOUND,
+    'PGRST301': ErrorType.AUTHENTICATION,
+    '23505': ErrorType.VALIDATION,
+    '23503': ErrorType.VALIDATION,
+    '42P01': ErrorType.NOT_FOUND,
+    '42501': ErrorType.AUTHORIZATION,
+    'network-request-failed': ErrorType.NETWORK,
+    'invalid-email': ErrorType.VALIDATION,
+    'weak-password': ErrorType.VALIDATION,
+    'user-not-found': ErrorType.AUTHENTICATION,
+    'wrong-password': ErrorType.AUTHENTICATION,
+    'email-already-in-use': ErrorType.VALIDATION,
+    'too-many-requests': ErrorType.AUTHENTICATION,
+    'user-disabled': ErrorType.AUTHORIZATION,
     'permission-denied': ErrorType.AUTHORIZATION,
     'not-found': ErrorType.NOT_FOUND,
     'unavailable': ErrorType.NETWORK,
@@ -80,7 +86,7 @@ export const mapFirebaseError = (errorCode: string): ErrorType => {
 // Hata sınıflandırma
 export const classifyError = (error: any): ErrorType => {
   if (error?.code) {
-    return mapFirebaseError(error.code);
+    return mapSupabaseError(error.code);
   }
 
   if (error?.message) {

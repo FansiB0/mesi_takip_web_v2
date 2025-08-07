@@ -128,17 +128,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     if (!user) return;
     
     try {
-      console.log('🔄 Updating user profile in Firebase:', updates);
+      console.log('🔄 Updating user profile in Supabase:', updates);
       
-      // Firebase'de kullanıcı profilini güncelle
+      // Supabase'de kullanıcı profilini güncelle
       const success = await userProfileService.updateProfile(user.id, updates);
       
       if (success) {
-        console.log('✅ User profile updated in Firebase successfully');
+        console.log('✅ User profile updated in Supabase successfully');
         const updatedUser = { ...user, ...updates };
         setUser(updatedUser);
       } else {
-        console.error('❌ Failed to update user profile in Firebase');
+        console.error('❌ Failed to update user profile in Supabase');
         // Yine de local state'i güncelle
         const updatedUser = { ...user, ...updates };
         setUser(updatedUser);

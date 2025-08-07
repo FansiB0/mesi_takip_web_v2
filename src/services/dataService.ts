@@ -61,16 +61,14 @@ export const employeeService = {
   // Tüm çalışanları getir
   async getAll(userId: string): Promise<Employee[]> {
     try {
-      const q = query(
-        collection(db, 'employees'),
-        where('userId', '==', userId),
-        orderBy('createdAt', 'desc')
-      );
-      const querySnapshot = await getDocs(q);
-      return querySnapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data()
-      })) as Employee[];
+      const { data, error } = await supabase
+        .from('employees')
+        .select('*')
+        .eq('userId', userId)
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      return data || [];
     } catch (error) {
       console.error('Error getting employees:', error);
       return [];
@@ -80,12 +78,18 @@ export const employeeService = {
   // Çalışan ekle
   async add(employee: Omit<Employee, 'id'>): Promise<string | null> {
     try {
-      const docRef = await addDoc(collection(db, 'employees'), {
-        ...employee,
-        createdAt: Timestamp.now(),
-        updatedAt: Timestamp.now()
-      });
-      return docRef.id;
+      const { data, error } = await supabase
+        .from('employees')
+        .insert({
+          ...employee,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
+      return data?.id || null;
     } catch (error) {
       console.error('Error adding employee:', error);
       return null;
@@ -95,11 +99,15 @@ export const employeeService = {
   // Çalışan güncelle
   async update(id: string, employee: Partial<Employee>): Promise<boolean> {
     try {
-      const docRef = doc(db, 'employees', id);
-      await updateDoc(docRef, {
-        ...employee,
-        updatedAt: Timestamp.now()
-      });
+      const { error } = await supabase
+        .from('employees')
+        .update({
+          ...employee,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', id);
+
+      if (error) throw error;
       return true;
     } catch (error) {
       console.error('Error updating employee:', error);
@@ -110,7 +118,12 @@ export const employeeService = {
   // Çalışan sil
   async delete(id: string): Promise<boolean> {
     try {
-      await deleteDoc(doc(db, 'employees', id));
+      const { error } = await supabase
+        .from('employees')
+        .delete()
+        .eq('id', id);
+
+      if (error) throw error;
       return true;
     } catch (error) {
       console.error('Error deleting employee:', error);
@@ -124,16 +137,14 @@ export const overtimeService = {
   // Tüm mesaileri getir
   async getAll(userId: string): Promise<Overtime[]> {
     try {
-      const q = query(
-        collection(db, 'overtimes'),
-        where('userId', '==', userId),
-        orderBy('date', 'desc')
-      );
-      const querySnapshot = await getDocs(q);
-      return querySnapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data()
-      })) as Overtime[];
+      const { data, error } = await supabase
+        .from('overtimes')
+        .select('*')
+        .eq('userId', userId)
+        .order('date', { ascending: false });
+
+      if (error) throw error;
+      return data || [];
     } catch (error) {
       console.error('Error getting overtimes:', error);
       return [];
@@ -143,12 +154,18 @@ export const overtimeService = {
   // Mesai ekle
   async add(overtime: Omit<Overtime, 'id'>): Promise<string | null> {
     try {
-      const docRef = await addDoc(collection(db, 'overtimes'), {
-        ...overtime,
-        createdAt: Timestamp.now(),
-        updatedAt: Timestamp.now()
-      });
-      return docRef.id;
+      const { data, error } = await supabase
+        .from('overtimes')
+        .insert({
+          ...overtime,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
+      return data?.id || null;
     } catch (error) {
       console.error('Error adding overtime:', error);
       return null;
@@ -158,11 +175,15 @@ export const overtimeService = {
   // Mesai güncelle
   async update(id: string, overtime: Partial<Overtime>): Promise<boolean> {
     try {
-      const docRef = doc(db, 'overtimes', id);
-      await updateDoc(docRef, {
-        ...overtime,
-        updatedAt: Timestamp.now()
-      });
+      const { error } = await supabase
+        .from('overtimes')
+        .update({
+          ...overtime,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', id);
+
+      if (error) throw error;
       return true;
     } catch (error) {
       console.error('Error updating overtime:', error);
@@ -173,8 +194,13 @@ export const overtimeService = {
   // Mesai sil
   async delete(id: string): Promise<boolean> {
     try {
-      await deleteDoc(doc(db, 'overtimes', id));
-      console.log('✅ Overtime deleted from Firebase:', id);
+      const { error } = await supabase
+        .from('overtimes')
+        .delete()
+        .eq('id', id);
+
+      if (error) throw error;
+      console.log('✅ Overtime deleted from Supabase:', id);
       return true;
     } catch (error) {
       console.error('Error deleting overtime:', error);
@@ -188,16 +214,14 @@ export const leaveService = {
   // Tüm izinleri getir
   async getAll(userId: string): Promise<Leave[]> {
     try {
-      const q = query(
-        collection(db, 'leaves'),
-        where('userId', '==', userId),
-        orderBy('startDate', 'desc')
-      );
-      const querySnapshot = await getDocs(q);
-      return querySnapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data()
-      })) as Leave[];
+      const { data, error } = await supabase
+        .from('leaves')
+        .select('*')
+        .eq('userId', userId)
+        .order('startDate', { ascending: false });
+
+      if (error) throw error;
+      return data || [];
     } catch (error) {
       console.error('Error getting leaves:', error);
       return [];
@@ -207,12 +231,18 @@ export const leaveService = {
   // İzin ekle
   async add(leave: Omit<Leave, 'id'>): Promise<string | null> {
     try {
-      const docRef = await addDoc(collection(db, 'leaves'), {
-        ...leave,
-        createdAt: Timestamp.now(),
-        updatedAt: Timestamp.now()
-      });
-      return docRef.id;
+      const { data, error } = await supabase
+        .from('leaves')
+        .insert({
+          ...leave,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
+      return data?.id || null;
     } catch (error) {
       console.error('Error adding leave:', error);
       return null;
@@ -222,11 +252,15 @@ export const leaveService = {
   // İzin güncelle
   async update(id: string, leave: Partial<Leave>): Promise<boolean> {
     try {
-      const docRef = doc(db, 'leaves', id);
-      await updateDoc(docRef, {
-        ...leave,
-        updatedAt: Timestamp.now()
-      });
+      const { error } = await supabase
+        .from('leaves')
+        .update({
+          ...leave,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', id);
+
+      if (error) throw error;
       return true;
     } catch (error) {
       console.error('Error updating leave:', error);
@@ -237,8 +271,13 @@ export const leaveService = {
   // İzin sil
   async delete(id: string): Promise<boolean> {
     try {
-      await deleteDoc(doc(db, 'leaves', id));
-      console.log('✅ Leave deleted from Firebase:', id);
+      const { error } = await supabase
+        .from('leaves')
+        .delete()
+        .eq('id', id);
+
+      if (error) throw error;
+      console.log('✅ Leave deleted from Supabase:', id);
       return true;
     } catch (error) {
       console.error('Error deleting leave:', error);
@@ -252,17 +291,15 @@ export const salaryService = {
   // Tüm maaşları getir
   async getAll(userId: string): Promise<Salary[]> {
     try {
-      const q = query(
-        collection(db, 'salaries'),
-        where('userId', '==', userId),
-        orderBy('year', 'desc'),
-        orderBy('month', 'desc')
-      );
-      const querySnapshot = await getDocs(q);
-      return querySnapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data()
-      })) as Salary[];
+      const { data, error } = await supabase
+        .from('salaries')
+        .select('*')
+        .eq('userId', userId)
+        .order('year', { ascending: false })
+        .order('month', { ascending: false });
+
+      if (error) throw error;
+      return data || [];
     } catch (error) {
       console.error('Error getting salaries:', error);
       return [];
@@ -272,12 +309,18 @@ export const salaryService = {
   // Maaş ekle
   async add(salary: Omit<Salary, 'id'>): Promise<string | null> {
     try {
-      const docRef = await addDoc(collection(db, 'salaries'), {
-        ...salary,
-        createdAt: Timestamp.now(),
-        updatedAt: Timestamp.now()
-      });
-      return docRef.id;
+      const { data, error } = await supabase
+        .from('salaries')
+        .insert({
+          ...salary,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
+      return data?.id || null;
     } catch (error) {
       console.error('Error adding salary:', error);
       return null;
@@ -287,11 +330,15 @@ export const salaryService = {
   // Maaş güncelle
   async update(id: string, salary: Partial<Salary>): Promise<boolean> {
     try {
-      const docRef = doc(db, 'salaries', id);
-      await updateDoc(docRef, {
-        ...salary,
-        updatedAt: Timestamp.now()
-      });
+      const { error } = await supabase
+        .from('salaries')
+        .update({
+          ...salary,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', id);
+
+      if (error) throw error;
       return true;
     } catch (error) {
       console.error('Error updating salary:', error);
@@ -302,7 +349,12 @@ export const salaryService = {
   // Maaş sil
   async delete(id: string): Promise<boolean> {
     try {
-      await deleteDoc(doc(db, 'salaries', id));
+      const { error } = await supabase
+        .from('salaries')
+        .delete()
+        .eq('id', id);
+
+      if (error) throw error;
       return true;
     } catch (error) {
       console.error('Error deleting salary:', error);

@@ -71,7 +71,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onClose }) => {
   const loadUsers = async () => {
     setIsLoadingUsers(true);
     try {
-      // Firebase'den tüm kullanıcıları al
+      // Supabase'den tüm kullanıcıları al
       const users = await userProfileService.getAllUsers();
       if (users) {
         setAllUsers(users.map((user: any) => ({
@@ -192,7 +192,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onClose }) => {
     try {
       switch (action) {
         case 'activate':
-          // Firebase'de kullanıcıyı aktifleştir
+          // Supabase'de kullanıcıyı aktifleştir
           await userProfileService.updateUserStatus(userId, true);
           setAllUsers(prev => prev.map(u => 
             u.id === userId ? { ...u, isActive: true } : u
@@ -200,7 +200,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onClose }) => {
           showSuccess('Kullanıcı aktifleştirildi');
           break;
         case 'deactivate':
-          // Firebase'de kullanıcıyı deaktifleştir
+          // Supabase'de kullanıcıyı deaktifleştir
           await userProfileService.updateUserStatus(userId, false);
           setAllUsers(prev => prev.map(u => 
             u.id === userId ? { ...u, isActive: false } : u
@@ -233,7 +233,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onClose }) => {
           break;
         case 'delete':
           if (confirm('Bu kullanıcıyı silmek istediğinizden emin misiniz? Bu işlem geri alınamaz.')) {
-            // Firebase'den kullanıcıyı sil
+            // Supabase'den kullanıcıyı sil
             await userProfileService.deleteUser(userId);
             setAllUsers(prev => prev.filter(u => u.id !== userId));
             showSuccess('Kullanıcı silindi');
@@ -897,7 +897,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onClose }) => {
                           logs.map((log) => (
                             <tr key={log.id} className="hover:bg-gray-50 dark:hover:bg-gray-600">
                               <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
-                                {log.timestamp.toDate().toLocaleString('tr-TR')}
+                                {new Date(log.timestamp).toLocaleString('tr-TR')}
                               </td>
                               <td className="px-6 py-4 whitespace-nowrap">
                                 <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
