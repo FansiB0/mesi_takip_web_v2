@@ -31,7 +31,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   useEffect(() => {
     // Supabase auth state listener
-    const unsubscribe = onAuthStateChange(async (supabaseUser: SupabaseUser | null) => {
+    const unsubscribe = onAuthStateChange((supabaseUser: SupabaseUser | null) => {
       console.log('🔄 Auth state changed:', supabaseUser ? 'User logged in' : 'User logged out');
       if (supabaseUser) {
         // Supabase kullanıcı bilgilerini kullan
@@ -79,7 +79,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       
       if (result.success && result.user) {
         const user: User = {
-          id: result.user.id,
+          id: (result.user as any).id || (result.user as any).uid,
           name,
           email,
           startDate,
