@@ -1,14 +1,8 @@
-import { 
-  doc, 
-  setDoc, 
-  getDoc, 
-  updateDoc, 
-  Timestamp 
-} from 'firebase/firestore';
-import { db } from '../config/firebase';
+import { supabase } from '../config/supabase';
 
 // Kullanıcı ayarları veri tipi
 export interface UserSettings {
+  id?: string;
   uid: string;
   theme: 'light' | 'dark' | 'system';
   language: 'tr' | 'en';
@@ -59,12 +53,12 @@ export interface UserSettings {
     startDate: string;
     employeeId: string;
   };
-  createdAt: Timestamp;
-  updatedAt: Timestamp;
+  created_at?: string;
+  updated_at?: string;
 }
 
 // Varsayılan ayarlar
-export const defaultSettings: Omit<UserSettings, 'uid' | 'createdAt' | 'updatedAt'> = {
+export const defaultSettings: Omit<UserSettings, 'id' | 'uid' | 'created_at' | 'updated_at'> = {
   theme: 'light',
   language: 'tr',
   notifications: {
@@ -110,79 +104,97 @@ export const defaultSettings: Omit<UserSettings, 'uid' | 'createdAt' | 'updatedA
   }
 };
 
-// Kullanıcı ayarları servisi
+// Settings service
 export const settingsService = {
-  // Kullanıcı ayarlarını oluştur
+  // Ayarları oluştur
   async createSettings(uid: string): Promise<boolean> {
     try {
-      const docRef = doc(db, 'userSettings', uid);
-      await setDoc(docRef, {
-        uid,
-        ...defaultSettings,
-        createdAt: Timestamp.now(),
-        updatedAt: Timestamp.now()
-      });
+      const { error } = await supabase
+        .from('user_settings')
+        .insert({
+          uid,
+          ...defaultSettings,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        });
+
+      if (error) throw error;
       return true;
     } catch (error) {
-      console.error('Error creating user settings:', error);
+      console.error('Error creating settings:', error);
       return false;
     }
   },
 
-  // Kullanıcı ayarlarını getir
+  // Ayarları getir
   async getSettings(uid: string): Promise<UserSettings | null> {
     try {
-      const docRef = doc(db, 'userSettings', uid);
-      const docSnap = await getDoc(docRef);
-      
-      if (docSnap.exists()) {
-        return docSnap.data() as UserSettings;
-      } else {
-        // Ayarlar yoksa oluştur
-        const created = await this.createSettings(uid);
-        if (created) {
-          return await this.getSettings(uid);
-        }
-        return null;
+      const { data, error } = await supabase
+        .from('user_settings')
+        .select('*')
+        .eq('uid', uid)
+        .single();
+
+      if (error) {
+        if (error.code === 'PGRST116') return null; // Kayıt bulunamadı
+        throw error;
       }
+
+      return data;
     } catch (error) {
-      console.error('Error getting user settings:', error);
+      console.error('Error getting settings:', error);
       return null;
     }
   },
 
-  // Kullanıcı ayarlarını güncelle
+  // Ayarları güncelle
   async updateSettings(uid: string, updates: Partial<UserSettings>): Promise<boolean> {
     try {
-      const docRef = doc(db, 'userSettings', uid);
-      const docSnap = await getDoc(docRef);
-      
-      if (docSnap.exists()) {
-        // Ayarlar varsa güncelle
-        await updateDoc(docRef, {
+      const { error } = await supabase
+        .from('user_settings')
+        .update({
           ...updates,
-          updatedAt: Timestamp.now()
-        });
-        console.log('✅ User settings updated successfully');
-        return true;
-      } else {
-        // Ayarlar yoksa oluştur
-        console.log('⚠️ User settings not found, creating new settings');
-        const newSettings = {
-          uid,
-          ...defaultSettings,
-          ...updates,
-          createdAt: Timestamp.now(),
-          updatedAt: Timestamp.now()
-        };
-        
-        await setDoc(docRef, newSettings);
-        console.log('✅ New user settings created successfully');
-        return true;
-      }
+          updated_at: new Date().toISOString()
+        })
+        .eq('uid', uid);
+
+      if (error) throw error;
+      return true;
     } catch (error) {
-      console.error('Error updating user settings:', error);
+      console.error('Error updating settings:', error);
       return false;
+    }
+  },
+
+  // Ayarları sil
+  async deleteSettings(uid: string): Promise<boolean> {
+    try {
+      const { error } = await supabase
+        .from('user_settings')
+        .delete()
+        .eq('uid', uid);
+
+      if (error) throw error;
+      return true;
+    } catch (error) {
+      console.error('Error deleting settings:', error);
+      return false;
+    }
+  },
+
+  // Tüm ayarları getir (admin için)
+  async getAllSettings(): Promise<UserSettings[]> {
+    try {
+      const { data, error } = await supabase
+        .from('user_settings')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      return data || [];
+    } catch (error) {
+      console.error('Error getting all settings:', error);
+      return [];
     }
   }
 }; 

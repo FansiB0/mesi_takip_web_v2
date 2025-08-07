@@ -1,18 +1,4 @@
-import { 
-  doc, 
-  setDoc, 
-  getDoc, 
-  collection, 
-  getDocs, 
-  query, 
-  orderBy, 
-  limit, 
-  Timestamp,
-  addDoc,
-  where
-} from 'firebase/firestore';
-import { db } from '../config/firebase';
-import { retryOperation, logError } from '../utils/errorHandler';
+import { supabase } from '../config/supabase';
 
 // Log seviyeleri
 export type LogLevel = 'info' | 'warning' | 'error' | 'success' | 'debug';
@@ -33,7 +19,7 @@ export type LogCategory =
 // Log veri tipi
 export interface LogEntry {
   id?: string;
-  timestamp: Timestamp;
+  timestamp: string;
   level: LogLevel;
   category: LogCategory;
   message: string;
@@ -54,6 +40,7 @@ export interface LogEntry {
   statusCode?: number;
   requestSize?: number;
   responseSize?: number;
+  created_at?: string;
 }
 
 // Log servisi
@@ -82,37 +69,39 @@ const removeUndefinedValues = (obj: any): any => {
 
 export const logService = {
   // Yeni log kaydı oluştur
-  async createLog(logData: Omit<LogEntry, 'timestamp'>): Promise<boolean> {
+  async createLog(logData: Omit<LogEntry, 'id' | 'timestamp' | 'created_at'>): Promise<boolean> {
     try {
       // undefined değerleri temizle
       const cleanLogData = removeUndefinedValues(logData);
       
-      const logEntry: LogEntry = {
+      const logEntry: Omit<LogEntry, 'id'> = {
         ...cleanLogData,
-        timestamp: Timestamp.now()
+        timestamp: new Date().toISOString(),
+        created_at: new Date().toISOString()
       };
 
-      // Firebase'e kaydet
-      await retryOperation(async () => {
-        await addDoc(collection(db, 'systemLogs'), logEntry);
-      });
+      // Supabase'e kaydet
+      const { error } = await supabase
+        .from('system_logs')
+        .insert(logEntry);
+
+      if (error) throw error;
 
       // Local storage'a da kaydet (fallback için)
-      this.saveToLocalStorage(logEntry);
+      this.saveToLocalStorage(logEntry as LogEntry);
 
-      console.log(`📝 Log created: [${logEntry.level.toUpperCase()}] ${logEntry.message}`);
       return true;
     } catch (error: any) {
       console.error('❌ Error creating log:', error);
       
-      // Sadece local storage'a kaydet
+      // Supabase başarısız olursa local storage'a kaydet
       try {
-        const cleanLogData = removeUndefinedValues(logData);
-        const logEntry: LogEntry = {
-          ...cleanLogData,
-          timestamp: Timestamp.now()
+        const fallbackLogEntry: LogEntry = {
+          ...logData,
+          timestamp: new Date().toISOString(),
+          created_at: new Date().toISOString()
         };
-        this.saveToLocalStorage(logEntry);
+        this.saveToLocalStorage(fallbackLogEntry);
         return true;
       } catch (localError) {
         console.error('❌ Failed to save log to local storage:', localError);
@@ -126,15 +115,11 @@ export const logService = {
     await this.createLog({
       level: success ? 'success' : 'error',
       category: 'auth',
-      message: success ? 'Kullanıcı giriş yaptı' : 'Giriş başarısız',
+      message: success ? 'Kullanıcı başarıyla giriş yaptı' : 'Kullanıcı girişi başarısız',
       userId,
       userEmail,
       userAction: 'login',
-      details: removeUndefinedValues({
-        success,
-        error,
-        timestamp: new Date().toISOString()
-      })
+      details: error ? { error } : undefined
     });
   },
 
@@ -143,19 +128,15 @@ export const logService = {
     await this.createLog({
       level: success ? 'success' : 'error',
       category: 'auth',
-      message: success ? 'Yeni kullanıcı kaydı' : 'Kayıt başarısız',
+      message: success ? 'Kullanıcı başarıyla kayıt oldu' : 'Kullanıcı kaydı başarısız',
       userId,
       userEmail,
       userAction: 'register',
-      details: removeUndefinedValues({
-        success,
-        error,
-        timestamp: new Date().toISOString()
-      })
+      details: error ? { error } : undefined
     });
   },
 
-  // Veri işlem logu
+  // Veri işlemi logu
   async logDataOperation(
     category: LogCategory,
     operation: 'create' | 'update' | 'delete' | 'read',
@@ -170,24 +151,18 @@ export const logService = {
     await this.createLog({
       level: success ? 'info' : 'error',
       category,
-      message: `${operation.toUpperCase()} işlemi ${success ? 'başarılı' : 'başarısız'}`,
+      message: `${operation} işlemi ${success ? 'başarılı' : 'başarısız'}`,
       userId,
       userEmail,
       userAction: operation,
       resource,
-      details: removeUndefinedValues({
-        operation,
-        resource,
-        success,
-        error,
-        dataBefore,
-        dataAfter,
-        timestamp: new Date().toISOString()
-      })
+      dataBefore,
+      dataAfter,
+      details: error ? { error } : undefined
     });
   },
 
-  // Admin işlem logu
+  // Admin işlemi logu
   async logAdminAction(
     adminId: string,
     adminEmail: string,
@@ -203,13 +178,11 @@ export const logService = {
       userId: adminId,
       userEmail: adminEmail,
       userAction: action,
-      details: removeUndefinedValues({
-        action,
+      details: {
         targetUserId,
         targetUserEmail,
-        ...details,
-        timestamp: new Date().toISOString()
-      })
+        ...details
+      }
     });
   },
 
@@ -229,12 +202,7 @@ export const logService = {
       userEmail,
       errorCode: error.name,
       errorStack: error.stack,
-      details: removeUndefinedValues({
-        error: error.message,
-        stack: error.stack,
-        context,
-        timestamp: new Date().toISOString()
-      })
+      details: context
     });
   },
 
@@ -247,23 +215,17 @@ export const logService = {
     userEmail?: string
   ): Promise<void> {
     await this.createLog({
-      level: duration > 5000 ? 'warning' : 'info',
+      level: 'debug',
       category: 'performance',
-      message: `Performans: ${operation} - ${duration}ms`,
+      message: `Performans: ${operation}`,
       userId,
       userEmail,
       duration,
-      resource,
-      details: removeUndefinedValues({
-        operation,
-        duration,
-        resource,
-        timestamp: new Date().toISOString()
-      })
+      resource
     });
   },
 
-  // Güvenlik logu
+  // Güvenlik olayı logu
   async logSecurityEvent(
     event: string,
     userId?: string,
@@ -276,34 +238,25 @@ export const logService = {
       message: `Güvenlik olayı: ${event}`,
       userId,
       userEmail,
-      details: removeUndefinedValues({
-        event,
-        ...details,
-        timestamp: new Date().toISOString()
-      })
+      details
     });
   },
 
-  // Tüm logları getir (Admin panel için)
+  // Tüm logları getir
   async getAllLogs(limitCount: number = 1000): Promise<LogEntry[]> {
     try {
-      const logsRef = collection(db, 'systemLogs');
-      const q = query(logsRef, orderBy('timestamp', 'desc'), limit(limitCount));
-      
-      const querySnapshot = await retryOperation(async () => {
-        return await getDocs(q);
-      });
-      
-      const logs: LogEntry[] = [];
-      querySnapshot.forEach((doc) => {
-        logs.push({ id: doc.id, ...doc.data() } as LogEntry);
-      });
-      
-      return logs;
+      const { data, error } = await supabase
+        .from('system_logs')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .limit(limitCount);
+
+      if (error) throw error;
+      return data || [];
     } catch (error: any) {
       console.error('❌ Error getting logs:', error);
       
-      // Local storage'dan getir
+      // Supabase başarısız olursa local storage'dan getir
       return this.getLogsFromLocalStorage(limitCount);
     }
   },
@@ -318,45 +271,39 @@ export const logService = {
     limit?: number;
   }): Promise<LogEntry[]> {
     try {
-      let q = query(collection(db, 'systemLogs'), orderBy('timestamp', 'desc'));
-      
+      let query = supabase
+        .from('system_logs')
+        .select('*')
+        .order('created_at', { ascending: false });
+
       if (filters.level) {
-        q = query(q, where('level', '==', filters.level));
+        query = query.eq('level', filters.level);
       }
-      
+
       if (filters.category) {
-        q = query(q, where('category', '==', filters.category));
+        query = query.eq('category', filters.category);
       }
-      
+
       if (filters.userId) {
-        q = query(q, where('userId', '==', filters.userId));
+        query = query.eq('userId', filters.userId);
       }
-      
+
+      if (filters.startDate) {
+        query = query.gte('created_at', filters.startDate.toISOString());
+      }
+
+      if (filters.endDate) {
+        query = query.lte('created_at', filters.endDate.toISOString());
+      }
+
       if (filters.limit) {
-        q = query(q, limit(filters.limit));
+        query = query.limit(filters.limit);
       }
-      
-      const querySnapshot = await retryOperation(async () => {
-        return await getDocs(q);
-      });
-      
-      const logs: LogEntry[] = [];
-      querySnapshot.forEach((doc) => {
-        const log = { id: doc.id, ...doc.data() } as LogEntry;
-        
-        // Tarih filtreleme
-        if (filters.startDate && log.timestamp.toDate() < filters.startDate) {
-          return;
-        }
-        
-        if (filters.endDate && log.timestamp.toDate() > filters.endDate) {
-          return;
-        }
-        
-        logs.push(log);
-      });
-      
-      return logs;
+
+      const { data, error } = await query;
+
+      if (error) throw error;
+      return data || [];
     } catch (error: any) {
       console.error('❌ Error getting filtered logs:', error);
       return [];
@@ -369,53 +316,43 @@ export const logService = {
       const logs = this.getLogsFromLocalStorage();
       logs.unshift(logEntry);
       
-      // Sadece son 1000 logu tut
+      // Maksimum 1000 log tut
       if (logs.length > 1000) {
         logs.splice(1000);
       }
       
-      localStorage.setItem('systemLogs', JSON.stringify(logs));
+      localStorage.setItem('system_logs', JSON.stringify(logs));
     } catch (error) {
-      console.error('❌ Failed to save log to local storage:', error);
+      console.error('❌ Error saving to local storage:', error);
     }
   },
 
   // Local storage'dan getir
   getLogsFromLocalStorage(limit: number = 1000): LogEntry[] {
     try {
-      const logsData = localStorage.getItem('systemLogs');
-      if (logsData) {
-        const logs = JSON.parse(logsData);
-        return logs.slice(0, limit).map((log: any) => ({
-          ...log,
-          timestamp: Timestamp.fromDate(new Date(log.timestamp.toDate ? log.timestamp.toDate() : log.timestamp))
-        }));
-      }
-      return [];
+      const logsData = localStorage.getItem('system_logs');
+      if (!logsData) return [];
+      
+      const logs: LogEntry[] = JSON.parse(logsData);
+      return logs.slice(0, limit);
     } catch (error) {
-      console.error('❌ Failed to get logs from local storage:', error);
+      console.error('❌ Error getting logs from local storage:', error);
       return [];
     }
   },
 
-  // Logları temizle
+  // Eski logları temizle
   async clearLogs(olderThanDays: number = 30): Promise<boolean> {
     try {
       const cutoffDate = new Date();
       cutoffDate.setDate(cutoffDate.getDate() - olderThanDays);
-      
-      const logs = await this.getAllLogs();
-      const logsToDelete = logs.filter(log => log.timestamp.toDate() < cutoffDate);
-      
-      // Firebase'den eski logları sil (batch delete)
-      for (const log of logsToDelete) {
-        if (log.id) {
-          await retryOperation(async () => {
-            await setDoc(doc(db, 'systemLogs', log.id!), { deleted: true });
-          });
-        }
-      }
-      
+
+      const { error } = await supabase
+        .from('system_logs')
+        .delete()
+        .lt('created_at', cutoffDate.toISOString());
+
+      if (error) throw error;
       return true;
     } catch (error: any) {
       console.error('❌ Error clearing logs:', error);
@@ -432,7 +369,7 @@ export const logService = {
     averageResponseTime: number;
   }> {
     try {
-      const logs = await this.getAllLogs();
+      const logs = await this.getAllLogs(10000);
       
       const stats = {
         total: logs.length,
@@ -458,41 +395,64 @@ export const logService = {
         recentErrors: 0,
         averageResponseTime: 0
       };
-      
+
       const last24Hours = new Date();
       last24Hours.setHours(last24Hours.getHours() - 24);
-      
+
       let totalDuration = 0;
       let durationCount = 0;
-      
+
       logs.forEach(log => {
-        // Seviye sayımı
-        stats.byLevel[log.level]++;
-        
-        // Kategori sayımı
-        stats.byCategory[log.category]++;
-        
+        // Level istatistikleri
+        if (log.level in stats.byLevel) {
+          stats.byLevel[log.level as LogLevel]++;
+        }
+
+        // Category istatistikleri
+        if (log.category in stats.byCategory) {
+          stats.byCategory[log.category as LogCategory]++;
+        }
+
         // Son 24 saatteki hatalar
-        if (log.level === 'error' && log.timestamp.toDate() > last24Hours) {
+        if (log.level === 'error' && new Date(log.created_at || log.timestamp) > last24Hours) {
           stats.recentErrors++;
         }
-        
-        // Ortalama süre hesaplama
+
+        // Ortalama response time
         if (log.duration) {
           totalDuration += log.duration;
           durationCount++;
         }
       });
-      
-      stats.averageResponseTime = durationCount > 0 ? totalDuration / durationCount : 0;
-      
+
+      if (durationCount > 0) {
+        stats.averageResponseTime = totalDuration / durationCount;
+      }
+
       return stats;
     } catch (error: any) {
       console.error('❌ Error getting log stats:', error);
       return {
         total: 0,
-        byLevel: { info: 0, warning: 0, error: 0, success: 0, debug: 0 },
-        byCategory: { auth: 0, user: 0, salary: 0, overtime: 0, leave: 0, system: 0, admin: 0, data: 0, security: 0, performance: 0 },
+        byLevel: {
+          info: 0,
+          warning: 0,
+          error: 0,
+          success: 0,
+          debug: 0
+        },
+        byCategory: {
+          auth: 0,
+          user: 0,
+          salary: 0,
+          overtime: 0,
+          leave: 0,
+          system: 0,
+          admin: 0,
+          data: 0,
+          security: 0,
+          performance: 0
+        },
         recentErrors: 0,
         averageResponseTime: 0
       };
