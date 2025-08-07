@@ -3,7 +3,7 @@ import { User } from '../types';
 import { loginUser, register as registerUser, logoutUser, onAuthStateChange, getCurrentUser } from '../services/authService';
 import { userProfileService } from '../services/userProfileService';
 import { settingsService } from '../services/settingsService';
-import { User as FirebaseUser } from 'firebase/auth';
+import type { SupabaseUser } from '../services/supabaseAuthService';
 
 interface AuthContextType {
   user: User | null;
@@ -30,62 +30,33 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    // Firebase auth state listener
-    const unsubscribe = onAuthStateChange(async (firebaseUser: FirebaseUser | null) => {
-      console.log('🔄 Auth state changed:', firebaseUser ? 'User logged in' : 'User logged out');
-      if (firebaseUser) {
-        // Önce Firebase'den kullanıcı profilini al
-        const userProfile = await userProfileService.getProfile(firebaseUser.uid);
-        
-        if (userProfile) {
-          console.log('📋 User profile found:', userProfile);
-          console.log('🆔 Firebase user UID:', firebaseUser.uid);
-          // Profil bilgilerini kullan
-          const userData: User = {
-            id: firebaseUser.uid, // Firebase user ID'sini kullan
-            name: userProfile.name,
-            email: userProfile.email,
-            startDate: userProfile.startDate,
-            employeeType: userProfile.employeeType
-          };
-          setUser(userData);
-          console.log('✅ User set in context:', userData);
-          // localStorage'a kullanıcı ID'sini kaydet
-          localStorage.setItem('currentUser', userProfile.uid);
-        } else {
-          // Profil yoksa otomatik oluştur
-          console.log('🔄 User profile not found, creating automatically...');
-          const userData: User = {
-            id: firebaseUser.uid,
-            name: firebaseUser.displayName || firebaseUser.email?.split('@')[0] || 'Kullanıcı',
-            email: firebaseUser.email || '',
-            startDate: new Date().toISOString().split('T')[0],
-            employeeType: 'normal'
-          };
-          
-          // userProfiles koleksiyonuna otomatik kaydet
-          await userProfileService.createProfile({
-            uid: firebaseUser.uid,
-            name: userData.name,
-            email: userData.email,
-            startDate: userData.startDate,
-            employeeType: userData.employeeType,
-            isActive: true,
-            lastLogin: new Date().toISOString()
-          });
-          
-          setUser(userData);
-          console.log('✅ User set in context (fallback):', userData);
-          // localStorage'a kullanıcı ID'sini kaydet
-          localStorage.setItem('currentUser', firebaseUser.uid);
-        }
+    // Supabase auth state listener
+    const unsubscribe = onAuthStateChange(async (supabaseUser: SupabaseUser | null) => {
+      console.log('🔄 Auth state changed:', supabaseUser ? 'User logged in' : 'User logged out');
+      if (supabaseUser) {
+        // Supabase kullanıcı bilgilerini kullan
+        const userData: User = {
+          id: supabaseUser.id,
+          name: supabaseUser.name,
+          email: supabaseUser.email,
+          startDate: new Date().toISOString().split('T')[0],
+          employeeType: 'normal'
+        };
+        setUser(userData);
+        console.log('✅ User set in context:', userData);
+        // localStorage'a kullanıcı ID'sini kaydet
+        localStorage.setItem('currentUser', supabaseUser.id);
       } else {
         setUser(null);
       }
       setIsLoading(false);
     });
 
-    return () => unsubscribe();
+    return () => {
+      if (unsubscribe && typeof unsubscribe === 'function') {
+        unsubscribe();
+      }
+    };
   }, []);
 
   const login = async (email: string, password: string): Promise<{ success: boolean; error?: string }> => {
@@ -108,7 +79,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       
       if (result.success && result.user) {
         const user: User = {
-          id: result.user.uid,
+          id: result.user.id,
           name,
           email,
           startDate,
@@ -138,21 +109,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   // Kullanıcıyı yeniden yükle
   const reloadUser = async () => {
-    const currentUser = getCurrentUser();
+    const currentUser = await getCurrentUser();
     if (currentUser) {
       console.log('🔄 Reloading user data...');
-      const userProfile = await userProfileService.getProfile(currentUser.uid);
-      if (userProfile) {
-        const userData: User = {
-          id: currentUser.uid,
-          name: userProfile.name,
-          email: userProfile.email,
-          startDate: userProfile.startDate,
-          employeeType: userProfile.employeeType
-        };
-        setUser(userData);
-        console.log('✅ User reloaded:', userData);
-      }
+      const userData: User = {
+        id: currentUser.id,
+        name: currentUser.name,
+        email: currentUser.email,
+        startDate: new Date().toISOString().split('T')[0],
+        employeeType: 'normal'
+      };
+      setUser(userData);
+      console.log('✅ User reloaded:', userData);
     }
   };
 

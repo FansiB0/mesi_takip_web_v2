@@ -131,7 +131,7 @@ export const getCurrentUser = async (): Promise<SupabaseUser | null> => {
 
 // Auth state değişikliklerini dinle
 export const onAuthStateChange = (callback: (user: SupabaseUser | null) => void) => {
-  return supabase.auth.onAuthStateChange(async (event, session) => {
+  const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
     if (event === 'SIGNED_IN' && session?.user) {
       try {
         const { data: userData, error } = await supabase
@@ -150,6 +150,8 @@ export const onAuthStateChange = (callback: (user: SupabaseUser | null) => void)
       callback(null)
     }
   })
+  
+  return () => subscription.unsubscribe()
 }
 
 // Kullanıcı profili oluştur
