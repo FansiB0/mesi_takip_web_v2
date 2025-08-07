@@ -9,6 +9,13 @@ import {
 import { doc, setDoc, Timestamp } from 'firebase/firestore';
 import { auth, db } from '../config/firebase';
 import { localAuthService } from './localAuthService';
+import { 
+  registerUser as supabaseRegister, 
+  loginUser as supabaseLogin, 
+  logoutUser as supabaseLogout,
+  getCurrentUser as supabaseGetCurrentUser,
+  onAuthStateChange as supabaseOnAuthStateChange
+} from './supabaseAuthService';
 
 // Firebase bağlantı kontrolü
 const checkFirebaseConnection = async (): Promise<boolean> => {
@@ -51,75 +58,77 @@ const isFirebaseAvailable = async (): Promise<boolean> => {
 
 export const register = async (email: string, password: string, userData: any) => {
   try {
-    // Önce Firebase'in kullanılabilir olup olmadığını kontrol et
-    const firebaseAvailable = await isFirebaseAvailable();
+    // Önce Supabase'i dene
+    console.log('🗄️ Trying Supabase for registration');
     
-    if (firebaseAvailable) {
-      console.log('🔥 Using Firebase for registration');
-      
-      // Firebase ile dene
-      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-      const user = userCredential.user;
-
-      // Firestore'a kullanıcı bilgilerini kaydet
-      await setDoc(doc(db, 'users', user.uid), {
-        ...userData,
-        email: user.email,
-        createdAt: Timestamp.now(),
-        lastLogin: Timestamp.now()
+    try {
+      const result = await supabaseRegister({
+        email,
+        password,
+        name: userData.name,
+        role: userData.role || 'user'
       });
+      
+      console.log('✅ Supabase registration successful');
+      return { user: result.user, success: true };
+    } catch (supabaseError: any) {
+      console.log('❌ Supabase registration failed:', supabaseError);
+      
+      // Supabase hatası varsa Firebase'e geç
+      const firebaseAvailable = await isFirebaseAvailable();
+      
+      if (firebaseAvailable) {
+        console.log('🔥 Falling back to Firebase');
+        
+        const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+        const user = userCredential.user;
 
-      return { user, success: true };
-    } else {
-      console.log('💾 Firebase not available, using localStorage');
-      return await localAuthService.registerUser(email, password, userData.name, userData.startDate);
+        await setDoc(doc(db, 'users', user.uid), {
+          ...userData,
+          email: user.email,
+          createdAt: Timestamp.now(),
+          lastLogin: Timestamp.now()
+        });
+
+        return { user, success: true };
+      } else {
+        console.log('💾 Falling back to localStorage');
+        return await localAuthService.registerUser(email, password, userData.name, userData.startDate);
+      }
     }
   } catch (error: any) {
     console.error('❌ Registration error:', error);
-    
-    // Firebase hatası varsa localStorage'a geç
-    if (error.code === 'auth/network-request-failed' || 
-        error.message.includes('ERR_CONNECTION_RESET') ||
-        error.code === 'auth/too-many-requests' ||
-        error.message.includes('Failed to fetch') ||
-        error.code === 'auth/operation-not-allowed') {
-      console.log('🌐 Firebase error detected, falling back to localStorage');
-      return await localAuthService.registerUser(email, password, userData.name, userData.startDate);
-    }
-    
     throw error;
   }
 };
 
 export const loginUser = async (email: string, password: string) => {
   try {
-    // Önce Firebase'in kullanılabilir olup olmadığını kontrol et
-    const firebaseAvailable = await isFirebaseAvailable();
+    // Önce Supabase'i dene
+    console.log('🗄️ Trying Supabase for login');
     
-    if (firebaseAvailable) {
-      console.log('🔥 Using Firebase for login');
+    try {
+      const user = await supabaseLogin(email, password);
+      console.log('✅ Supabase login successful');
+      return { user, success: true };
+    } catch (supabaseError: any) {
+      console.log('❌ Supabase login failed:', supabaseError);
       
-      // Firebase ile dene
-      const userCredential = await signInWithEmailAndPassword(auth, email, password);
-      return { user: userCredential.user, success: true };
-    } else {
-      console.log('💾 Firebase not available, using localStorage');
-      return await localAuthService.loginUser(email, password);
+      // Supabase hatası varsa Firebase'e geç
+      const firebaseAvailable = await isFirebaseAvailable();
+      
+      if (firebaseAvailable) {
+        console.log('🔥 Falling back to Firebase');
+        
+        const userCredential = await signInWithEmailAndPassword(auth, email, password);
+        return { user: userCredential.user, success: true };
+      } else {
+        console.log('💾 Falling back to localStorage');
+        return await localAuthService.loginUser(email, password);
+      }
     }
   } catch (error: any) {
     console.error('❌ Login error:', error);
-    
-    // Firebase hatası varsa localStorage'a geç
-    if (error.code === 'auth/network-request-failed' || 
-        error.message.includes('ERR_CONNECTION_RESET') ||
-        error.code === 'auth/too-many-requests' ||
-        error.message.includes('Failed to fetch') ||
-        error.code === 'auth/user-not-found' ||
-        error.code === 'auth/wrong-password') {
-      console.log('🌐 Firebase error detected, falling back to localStorage');
-      return await localAuthService.loginUser(email, password);
-    }
-    
     throw error;
   }
 };

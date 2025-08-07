@@ -1,5 +1,5 @@
 -- Enable Row Level Security
-ALTER DATABASE postgres SET "app.jwt_secret" TO 'your-jwt-secret';
+-- Note: app.jwt_secret is automatically set by Supabase
 
 -- Create users table
 CREATE TABLE IF NOT EXISTS users (
