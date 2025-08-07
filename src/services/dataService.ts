@@ -1,17 +1,4 @@
-import { 
-  collection, 
-  addDoc, 
-  updateDoc, 
-  deleteDoc, 
-  doc, 
-  getDocs, 
-  getDoc,
-  query,
-  where,
-  orderBy,
-  Timestamp 
-} from 'firebase/firestore';
-import { db } from '../config/firebase';
+import { supabase } from '../config/supabase';
 
 // Çalışan veri tipi
 export interface Employee {
@@ -23,8 +10,8 @@ export interface Employee {
   salary: number;
   startDate: string;
   userId: string;
-  createdAt?: Timestamp;
-  updatedAt?: Timestamp;
+  created_at?: string;
+  updated_at?: string;
 }
 
 // Mesai veri tipi
@@ -36,8 +23,8 @@ export interface Overtime {
   description: string;
   status: 'pending' | 'approved' | 'rejected';
   userId: string;
-  createdAt?: Timestamp;
-  updatedAt?: Timestamp;
+  created_at?: string;
+  updated_at?: string;
 }
 
 // İzin veri tipi
@@ -51,8 +38,8 @@ export interface Leave {
   reason: string;
   status: 'pending' | 'approved' | 'rejected';
   userId: string;
-  createdAt?: Timestamp;
-  updatedAt?: Timestamp;
+  created_at?: string;
+  updated_at?: string;
 }
 
 // Maaş veri tipi
@@ -65,8 +52,8 @@ export interface Salary {
   netSalary: number;
   bonus: number;
   besDeduction: number;
-  createdAt?: Timestamp;
-  updatedAt?: Timestamp;
+  created_at?: string;
+  updated_at?: string;
 }
 
 // Çalışan işlemleri

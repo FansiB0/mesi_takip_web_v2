@@ -4,7 +4,7 @@ import react from '@vitejs/plugin-react';
 // https://vitejs.dev/config/
 export default defineConfig({
   plugins: [react()],
-  // Firebase + Fallback Database için base path
+  // Supabase Database için base path
   base: '/',
   optimizeDeps: {
     exclude: ['lucide-react'],
@@ -13,7 +13,7 @@ export default defineConfig({
     rollupOptions: {
       output: {
         manualChunks: {
-          firebase: ['firebase/app', 'firebase/auth', 'firebase/firestore'],
+          supabase: ['@supabase/supabase-js'],
         },
       },
     },
@@ -30,6 +30,6 @@ export default defineConfig({
   },
   define: {
     // Global değişkenler
-    __USE_FIREBASE_FIRST__: JSON.stringify(true),
+          __USE_SUPABASE__: JSON.stringify(true),
   },
 });

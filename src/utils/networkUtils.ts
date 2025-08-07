@@ -1,4 +1,4 @@
-// Network utilities for handling Firebase connection issues
+// Network utilities for handling connection issues
 
 // Network durumu kontrolü
 export const isOnline = (): boolean => {
@@ -19,53 +19,23 @@ export const setupNetworkListeners = (
   };
 };
 
-// Firebase bağlantı testi
-export const testFirebaseConnection = async (): Promise<boolean> => {
+// Supabase bağlantı testi
+export const testSupabaseConnection = async (): Promise<boolean> => {
   try {
-    // Basit bir network testi
-    const response = await fetch('https://www.google.com', { 
-      method: 'HEAD',
-      mode: 'no-cors'
-    });
-    return true;
-  } catch (error) {
-    console.warn('⚠️ Network connection test failed:', error);
-    return false;
-  }
-};
-
-// Firebase API endpoint testi
-export const testFirebaseAPI = async (): Promise<boolean> => {
-  try {
-    const response = await fetch('https://securetoken.googleapis.com/v1/token', {
-      method: 'OPTIONS',
-      mode: 'cors'
-    });
-    return response.ok;
-  } catch (error) {
-    console.warn('⚠️ Firebase API test failed:', error);
-    return false;
-  }
-};
-
-// GitHub Pages için özel Firebase bağlantı testi
-export const testFirebaseForGitHubPages = async (): Promise<boolean> => {
-  try {
-    // Firebase Identity Toolkit API'sine test isteği
-    const apiKey = import.meta.env.VITE_FIREBASE_API_KEY || "AIzaSyAwuGiCbhncNHERF9vOV1wV5QiA3RXdgPk";
-    const response = await fetch(`https://identitytoolkit.googleapis.com/v1/accounts:lookup?key=${apiKey}`, {
-      method: 'POST',
+    console.log('🔍 Testing Supabase connection...');
+    
+    const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+    const response = await fetch(`${supabaseUrl}/rest/v1/`, {
+      method: 'GET',
       headers: {
-        'Content-Type': 'application/json',
-        'Origin': window.location.origin,
-      },
-      body: JSON.stringify({ idToken: 'test_token_for_connection_check' }),
+        'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY || '',
+        'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY || ''}`
+      }
     });
     
-    // 400 veya 401 beklenen hatalar (geçersiz token), bu bağlantının çalıştığını gösterir
-    return response.status === 400 || response.status === 401;
+    return response.status === 200;
   } catch (error) {
-    console.warn('⚠️ GitHub Pages Firebase connection test failed:', error);
+    console.warn('⚠️ Supabase connection test failed:', error);
     return false;
   }
 };
@@ -154,19 +124,19 @@ export const checkNetworkQuality = async (): Promise<'good' | 'poor' | 'offline'
   }
 };
 
-// GitHub Pages için özel network quality check
-export const checkGitHubPagesNetworkQuality = async (): Promise<'good' | 'poor' | 'offline'> => {
+// Supabase için özel network quality check
+export const checkSupabaseNetworkQuality = async (): Promise<'good' | 'poor' | 'offline'> => {
   if (!isOnline()) {
     return 'offline';
   }
 
   try {
     const startTime = performance.now();
-    const firebaseAvailable = await testFirebaseForGitHubPages();
+    const supabaseAvailable = await testSupabaseConnection();
     const endTime = performance.now();
     const responseTime = endTime - startTime;
 
-    if (!firebaseAvailable) {
+    if (!supabaseAvailable) {
       return 'offline';
     }
 
