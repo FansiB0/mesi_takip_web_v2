@@ -80,12 +80,12 @@ export const logService = {
         created_at: new Date().toISOString()
       };
 
-      // Supabase'e kaydet
-      const { error } = await supabase
-        .from('system_logs')
-        .insert(logEntry);
+      // Supabase'e kaydet (system_logs tablosu henüz oluşturulmadı)
+      // const { error } = await supabase
+      //   .from('system_logs')
+      //   .insert(logEntry);
 
-      if (error) throw error;
+      // if (error) throw error;
 
       // Local storage'a da kaydet (fallback için)
       this.saveToLocalStorage(logEntry as LogEntry);

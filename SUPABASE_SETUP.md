@@ -1,310 +1,127 @@
-# Supabase Kurulum Rehberi
+# 🚀 Supabase Kurulum Rehberi
 
-Bu rehber, Mesai Takip Web uygulamasını Firebase'den Supabase'e geçirmek için adım adım talimatları içerir.
-
-## 🎯 Amaç
-
-Firebase'den Supabase'e geçiş yaparak daha güvenilir ve performanslı bir backend çözümü elde etmek.
+Bu rehber, Mesi Takip uygulamasını Supabase ile entegre etmek için adım adım talimatları içerir.
 
 ## 📋 Gereksinimler
 
-- Supabase hesabı
-- Node.js 18+
-- npm veya yarn
+- Supabase hesabı (ücretsiz)
+- Node.js ve npm
+- Git
 
-## 🚀 Adım Adım Kurulum
+## 🔧 Adım 1: Supabase Projesi Oluşturma
 
-### 1. Supabase Projesi Oluşturma
-
-1. [Supabase Console](https://supabase.com/)'a gidin
+1. [Supabase Dashboard](https://supabase.com/dashboard)'a gidin
 2. "New Project" butonuna tıklayın
-3. Proje adını girin: `mesai-takip-web-v2`
-4. Database password belirleyin
+3. Proje adını girin: `mesi-takip-app`
+4. Database şifresi oluşturun (güvenli bir şifre seçin)
 5. Region seçin (en yakın bölgeyi seçin)
 6. "Create new project" butonuna tıklayın
 
-### 2. Environment Variables
+## 🗄️ Adım 2: Database Schema Kurulumu
 
-Proje kök dizininde `.env` dosyası oluşturun:
+1. Supabase Dashboard'da projenizi açın
+2. Sol menüden "SQL Editor" seçin
+3. "New query" butonuna tıklayın
+4. `supabase-schema.sql` dosyasının içeriğini kopyalayın
+5. SQL Editor'a yapıştırın ve "Run" butonuna tıklayın
+
+## 🔐 Adım 3: Environment Variables
+
+1. Supabase Dashboard'da "Settings" > "API" bölümüne gidin
+2. "Project URL" ve "anon public" key'i kopyalayın
+3. Proje klasörünüzde `.env` dosyası oluşturun:
 
 ```env
 # Supabase Configuration
-VITE_SUPABASE_URL=https://your-project-ref.supabase.co
-VITE_SUPABASE_ANON_KEY=your_supabase_anon_key
+VITE_SUPABASE_URL=your_project_url_here
+VITE_SUPABASE_ANON_KEY=your_anon_key_here
+
+# Firebase Configuration (mevcut)
+VITE_FIREBASE_API_KEY=your_firebase_api_key
+VITE_FIREBASE_AUTH_DOMAIN=your_firebase_auth_domain
+VITE_FIREBASE_PROJECT_ID=your_firebase_project_id
+VITE_FIREBASE_STORAGE_BUCKET=your_firebase_storage_bucket
+VITE_FIREBASE_MESSAGING_SENDER_ID=your_firebase_messaging_sender_id
+VITE_FIREBASE_APP_ID=your_firebase_app_id
 ```
 
-### 3. Database Schema
+## 🔧 Adım 4: Auth Ayarları
 
-Supabase Dashboard > SQL Editor'de aşağıdaki SQL komutlarını çalıştırın:
+1. Supabase Dashboard'da "Authentication" > "Settings" bölümüne gidin
+2. "Site URL" alanına uygulamanızın URL'sini ekleyin:
+   - Development: `http://localhost:5173`
+   - Production: `https://your-app.netlify.app`
+3. "Redirect URLs" bölümüne aynı URL'leri ekleyin
+4. "Save" butonuna tıklayın
 
-```sql
--- Users tablosu
-CREATE TABLE IF NOT EXISTS users (
-  id UUID REFERENCES auth.users(id) PRIMARY KEY,
-  email TEXT UNIQUE NOT NULL,
-  name TEXT,
-  role TEXT DEFAULT 'employee',
-  status TEXT DEFAULT 'active',
-  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
-);
+## 🚀 Adım 5: Uygulamayı Test Etme
 
--- User profiles tablosu
-CREATE TABLE IF NOT EXISTS user_profiles (
-  id UUID REFERENCES auth.users(id) PRIMARY KEY,
-  name TEXT,
-  email TEXT,
-  phone TEXT,
-  department TEXT,
-  position TEXT,
-  start_date DATE,
-  employee_id TEXT,
-  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
-);
+1. Terminal'de proje klasörüne gidin
+2. Bağımlılıkları yükleyin:
+   ```bash
+   npm install
+   ```
+3. Uygulamayı başlatın:
+   ```bash
+   npm run dev
+   ```
+4. Tarayıcıda `http://localhost:5173` adresine gidin
+5. Yeni bir kullanıcı hesabı oluşturun
 
--- Leaves tablosu
-CREATE TABLE IF NOT EXISTS leaves (
-  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-  employee_id UUID REFERENCES auth.users(id),
-  start_date DATE NOT NULL,
-  end_date DATE NOT NULL,
-  leave_type TEXT NOT NULL,
-  reason TEXT,
-  status TEXT DEFAULT 'pending',
-  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
-);
+## 📊 Adım 6: Database Kontrolü
 
--- Overtime tablosu
-CREATE TABLE IF NOT EXISTS overtime (
-  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-  employee_id UUID REFERENCES auth.users(id),
-  date DATE NOT NULL,
-  hours DECIMAL(4,2) NOT NULL,
-  overtime_type TEXT NOT NULL,
-  hourly_rate DECIMAL(10,2),
-  total_payment DECIMAL(10,2),
-  description TEXT,
-  status TEXT DEFAULT 'pending',
-  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
-);
+1. Supabase Dashboard'da "Table Editor" bölümüne gidin
+2. Aşağıdaki tabloların oluşturulduğunu kontrol edin:
+   - `users`
+   - `user_profiles`
+   - `leaves`
+   - `overtime`
+   - `salary_records`
 
--- Salary records tablosu
-CREATE TABLE IF NOT EXISTS salary_records (
-  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-  employee_id UUID REFERENCES auth.users(id),
-  month INTEGER NOT NULL,
-  year INTEGER NOT NULL,
-  base_salary DECIMAL(10,2) NOT NULL,
-  overtime_pay DECIMAL(10,2) DEFAULT 0,
-  bonus DECIMAL(10,2) DEFAULT 0,
-  deductions DECIMAL(10,2) DEFAULT 0,
-  net_salary DECIMAL(10,2) NOT NULL,
-  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
-);
+## 🔒 Adım 7: Row Level Security (RLS)
 
--- User settings tablosu
-CREATE TABLE IF NOT EXISTS user_settings (
-  user_id UUID REFERENCES auth.users(id) PRIMARY KEY,
-  profile JSONB,
-  notifications JSONB,
-  salary JSONB,
-  working_hours JSONB,
-  theme TEXT DEFAULT 'light',
-  language TEXT DEFAULT 'tr',
-  fontSize TEXT DEFAULT 'medium',
-  colorScheme TEXT DEFAULT 'blue',
-  compactMode BOOLEAN DEFAULT false,
-  showAnimations BOOLEAN DEFAULT true,
-  sidebarCollapsed BOOLEAN DEFAULT false,
-  dashboardLayout TEXT DEFAULT 'grid',
-  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
-);
+RLS politikaları otomatik olarak oluşturulmuştur. Bu politikalar:
+- Kullanıcılar sadece kendi verilerini görebilir
+- Adminler tüm verileri görebilir ve yönetebilir
+- Kullanıcılar sadece kendi verilerini ekleyebilir
 
--- System logs tablosu
-CREATE TABLE IF NOT EXISTS system_logs (
-  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-  user_id UUID REFERENCES auth.users(id),
-  action TEXT NOT NULL,
-  details JSONB,
-  ip_address INET,
-  user_agent TEXT,
-  timestamp TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
-);
+## 🚀 Adım 8: Production Deploy
 
--- Indexes
-CREATE INDEX IF NOT EXISTS idx_leaves_employee_id ON leaves(employee_id);
-CREATE INDEX IF NOT EXISTS idx_overtime_employee_id ON overtime(employee_id);
-CREATE INDEX IF NOT EXISTS idx_salary_records_employee_id ON salary_records(employee_id);
-CREATE INDEX IF NOT EXISTS idx_system_logs_user_id ON system_logs(user_id);
-CREATE INDEX IF NOT EXISTS idx_system_logs_timestamp ON system_logs(timestamp);
+1. Netlify'da environment variables ekleyin:
+   - `VITE_SUPABASE_URL`
+   - `VITE_SUPABASE_ANON_KEY`
 
--- Row Level Security (RLS) Policies
-ALTER TABLE users ENABLE ROW LEVEL SECURITY;
-ALTER TABLE user_profiles ENABLE ROW LEVEL SECURITY;
-ALTER TABLE leaves ENABLE ROW LEVEL SECURITY;
-ALTER TABLE overtime ENABLE ROW LEVEL SECURITY;
-ALTER TABLE salary_records ENABLE ROW LEVEL SECURITY;
-ALTER TABLE user_settings ENABLE ROW LEVEL SECURITY;
-ALTER TABLE system_logs ENABLE ROW LEVEL SECURITY;
+2. Uygulamayı deploy edin:
+   ```bash
+   npm run deploy:netlify
+   ```
 
--- Users tablosu için RLS politikaları
-DROP POLICY IF EXISTS "Users can view own profile" ON users;
-CREATE POLICY "Users can view own profile" ON users
-  FOR SELECT USING (auth.uid() = id);
+## 🔍 Sorun Giderme
 
-DROP POLICY IF EXISTS "Users can update own profile" ON users;
-CREATE POLICY "Users can update own profile" ON users
-  FOR UPDATE USING (auth.uid() = id);
+### "Invalid API key" hatası
+- Environment variables'ların doğru ayarlandığından emin olun
+- Supabase Dashboard'dan API key'leri tekrar kontrol edin
 
-DROP POLICY IF EXISTS "Admins can view all users" ON users;
-CREATE POLICY "Admins can view all users" ON users
-  FOR SELECT USING (
-    EXISTS (
-      SELECT 1 FROM users WHERE id = auth.uid() AND role = 'admin'
-    )
-  );
+### "RLS policy violation" hatası
+- Kullanıcının giriş yapmış olduğundan emin olun
+- Admin yetkilerini kontrol edin
 
--- User profiles tablosu için RLS politikaları
-DROP POLICY IF EXISTS "Users can view own profile" ON user_profiles;
-CREATE POLICY "Users can view own profile" ON user_profiles
-  FOR SELECT USING (auth.uid() = id);
+### "Table does not exist" hatası
+- SQL schema'nın başarıyla çalıştırıldığından emin olun
+- Table Editor'da tabloların mevcut olduğunu kontrol edin
 
-DROP POLICY IF EXISTS "Users can update own profile" ON user_profiles;
-CREATE POLICY "Users can update own profile" ON user_profiles
-  FOR UPDATE USING (auth.uid() = id);
+## 📞 Destek
 
-DROP POLICY IF EXISTS "Users can insert own profile" ON user_profiles;
-CREATE POLICY "Users can insert own profile" ON user_profiles
-  FOR INSERT WITH CHECK (auth.uid() = id);
+Sorun yaşarsanız:
+1. Supabase [Discord](https://discord.supabase.com/) kanalına katılın
+2. [Supabase Documentation](https://supabase.com/docs)'ı inceleyin
+3. GitHub Issues'da sorun bildirin
 
--- Leaves tablosu için RLS politikaları
-DROP POLICY IF EXISTS "Users can view own leaves" ON leaves;
-CREATE POLICY "Users can view own leaves" ON leaves
-  FOR SELECT USING (auth.uid() = employee_id);
+## 🎉 Tebrikler!
 
-DROP POLICY IF EXISTS "Users can insert own leaves" ON leaves;
-CREATE POLICY "Users can insert own leaves" ON leaves
-  FOR INSERT WITH CHECK (auth.uid() = employee_id);
-
-DROP POLICY IF EXISTS "Users can update own leaves" ON leaves;
-CREATE POLICY "Users can update own leaves" ON leaves
-  FOR UPDATE USING (auth.uid() = employee_id);
-
-DROP POLICY IF EXISTS "Admins can view all leaves" ON leaves;
-CREATE POLICY "Admins can view all leaves" ON leaves
-  FOR SELECT USING (
-    EXISTS (
-      SELECT 1 FROM users WHERE id = auth.uid() AND role = 'admin'
-    )
-  );
-
--- Overtime tablosu için RLS politikaları
-DROP POLICY IF EXISTS "Users can view own overtime" ON overtime;
-CREATE POLICY "Users can view own overtime" ON overtime
-  FOR SELECT USING (auth.uid() = employee_id);
-
-DROP POLICY IF EXISTS "Users can insert own overtime" ON overtime;
-CREATE POLICY "Users can insert own overtime" ON overtime
-  FOR INSERT WITH CHECK (auth.uid() = employee_id);
-
-DROP POLICY IF EXISTS "Users can update own overtime" ON overtime;
-CREATE POLICY "Users can update own overtime" ON overtime
-  FOR UPDATE USING (auth.uid() = employee_id);
-
-DROP POLICY IF EXISTS "Admins can view all overtime" ON overtime;
-CREATE POLICY "Admins can view all overtime" ON overtime
-  FOR SELECT USING (
-    EXISTS (
-      SELECT 1 FROM users WHERE id = auth.uid() AND role = 'admin'
-    )
-  );
-
--- Salary records tablosu için RLS politikaları
-DROP POLICY IF EXISTS "Users can view own salary" ON salary_records;
-CREATE POLICY "Users can view own salary" ON salary_records
-  FOR SELECT USING (auth.uid() = employee_id);
-
-DROP POLICY IF EXISTS "Admins can manage all salary records" ON salary_records;
-CREATE POLICY "Admins can manage all salary records" ON salary_records
-  FOR ALL USING (
-    EXISTS (
-      SELECT 1 FROM users WHERE id = auth.uid() AND role = 'admin'
-    )
-  );
-
--- User settings tablosu için RLS politikaları
-DROP POLICY IF EXISTS "Users can manage own settings" ON user_settings;
-CREATE POLICY "Users can manage own settings" ON user_settings
-  FOR ALL USING (auth.uid() = user_id);
-
--- System logs tablosu için RLS politikaları
-DROP POLICY IF EXISTS "Users can view own logs" ON system_logs;
-CREATE POLICY "Users can view own logs" ON system_logs
-  FOR SELECT USING (auth.uid() = user_id);
-
-DROP POLICY IF EXISTS "Admins can view all logs" ON system_logs;
-CREATE POLICY "Admins can view all logs" ON system_logs
-  FOR SELECT USING (
-    EXISTS (
-      SELECT 1 FROM users WHERE id = auth.uid() AND role = 'admin'
-    )
-  );
-
-DROP POLICY IF EXISTS "System can insert logs" ON system_logs;
-CREATE POLICY "System can insert logs" ON system_logs
-  FOR INSERT WITH CHECK (true);
-```
-
-### 4. Authentication Ayarları
-
-1. Supabase Dashboard > Authentication > Settings
-2. Site URL'yi ayarlayın: `https://your-domain.com`
-3. Redirect URLs'e ekleyin:
-   - `https://your-domain.com/auth/callback`
-   - `http://localhost:5173/auth/callback`
-   - `http://localhost:5174/auth/callback`
-
-### 5. API Anahtarları
-
-Supabase Dashboard > Settings > API'den şu bilgileri alın:
-- Project URL
-- anon public key
-
-Bu bilgileri `.env` dosyasına ekleyin.
-
-## ✅ Doğrulama
-
-Kurulum tamamlandıktan sonra:
-
-1. Uygulamayı başlatın: `npm run dev`
-2. Yeni kullanıcı kaydı yapın
-3. Giriş yapın
-4. Verilerin Supabase'de göründüğünü kontrol edin
-
-## 🔧 Sorun Giderme
-
-### RLS Hatası
-Eğer "new row violates row-level security policy" hatası alırsanız:
-1. Supabase Dashboard > Authentication > Policies
-2. İlgili tablonun politikalarını kontrol edin
-3. Gerekirse politikaları güncelleyin
-
-### Bağlantı Hatası
-Eğer Supabase bağlantı hatası alırsanız:
-1. Environment variables'ları kontrol edin
-2. Supabase projesinin aktif olduğundan emin olun
-3. Network bağlantınızı kontrol edin
-
-## 🎉 Başarı!
-
-Artık uygulamanız:
-- ✅ Supabase'den bağımsız çalışıyor
-- ✅ PostgreSQL veritabanı kullanıyor
+Supabase entegrasyonu tamamlandı! Artık uygulamanız:
+- ✅ Güvenli PostgreSQL database kullanıyor
+- ✅ Real-time özellikler destekliyor
 - ✅ Row Level Security ile korunuyor
-- ✅ Modern authentication sistemi var
+- ✅ Ücretsiz tier ile çalışıyor
+- ✅ Firebase'den bağımsız çalışıyor

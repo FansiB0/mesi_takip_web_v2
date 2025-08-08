@@ -45,7 +45,7 @@ interface DataContextType {
   
   // Salary data
   salaries: Salary[];
-  addSalary: (salary: Omit<Salary, 'id' | 'createdAt'>) => Promise<ApiResponse<Salary>>;
+  addSalary: (salary: Omit<Salary, 'id' | 'created_at'>) => Promise<ApiResponse<Salary>>;
   updateSalary: (id: string, salary: Partial<Salary>) => Promise<ApiResponse<boolean>>;
   deleteSalary: (id: string) => Promise<ApiResponse<boolean>>;
   
@@ -100,303 +100,145 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     user = authContext.user;
     isLoading = authContext.isLoading;
   } catch (error) {
-    console.log('Auth context not available yet');
+    console.warn('Auth context not available:', error);
   }
-  
+
   try {
     const toastContext = useToast();
     toast = toastContext;
   } catch (error) {
-    console.log('Toast context not available yet');
+    console.warn('Toast context not available:', error);
   }
 
   // State'ler
   const [salaries, setSalaries] = useState<Salary[]>([]);
   const [overtimes, setOvertimes] = useState<Overtime[]>([]);
   const [leaves, setLeaves] = useState<Leave[]>([]);
-  const [holidays, setHolidays] = useState<Holiday[]>([]);
-  
+  const [holidays, setHolidays] = useState<Holiday[]>(turkeyHolidays);
+
   // Loading states
-  const [loadingStates, setLoadingStates] = useState({
-    salaries: { isLoading: false, error: undefined, retryCount: 0 },
-    overtimes: { isLoading: false, error: undefined, retryCount: 0 },
-    leaves: { isLoading: false, error: undefined, retryCount: 0 },
-    holidays: { isLoading: false, error: undefined, retryCount: 0 }
+  const [loadingStates, setLoadingStates] = useState<DataContextType['loadingStates']>({
+    salaries: { isLoading: false, error: undefined },
+    overtimes: { isLoading: false, error: undefined },
+    leaves: { isLoading: false, error: undefined },
+    holidays: { isLoading: false, error: undefined }
   });
-  
+
   // Network status
-  const [isOffline, setIsOffline] = useState(isOfflineMode());
+  const [isOffline, setIsOffline] = useState(false);
   const [networkQuality, setNetworkQuality] = useState<'good' | 'poor' | 'offline'>('good');
 
   // Loading state güncelleme fonksiyonu
-  const updateLoadingState = useCallback((key: keyof typeof loadingStates, updates: Partial<LoadingState>) => {
+  const updateLoadingState = useCallback((key: keyof DataContextType['loadingStates'], state: LoadingState) => {
     setLoadingStates(prev => ({
       ...prev,
-      [key]: { ...prev[key], ...updates }
+      [key]: state
     }));
   }, []);
 
-  // Hata temizleme
-  const clearErrors = useCallback(() => {
-    setLoadingStates(prev => ({
-      salaries: { ...prev.salaries, error: undefined },
-      overtimes: { ...prev.overtimes, error: undefined },
-      leaves: { ...prev.leaves, error: undefined },
-      holidays: { ...prev.holidays, error: undefined }
-    }));
-  }, []);
-
-  // Network monitoring setup
-  useEffect(() => {
-    console.log('🌐 Setting up network monitoring...');
-    
-    // Connection monitor'ı başlat
-    connectionMonitor.start();
-    
-    // Network status listener
-    const unsubscribe = connectionMonitor.onStatusChange((status) => {
-      console.log('🌐 Network status changed:', status);
-      setNetworkQuality(status === 'online' ? 'good' : status);
-      setIsOffline(status === 'offline');
-      
-      if (status === 'online' && isOfflineMode()) {
-        // Online olduğunda offline mode'u kapat
-        toggleOfflineMode(false);
-      }
-    });
-    
-    return () => {
-      connectionMonitor.stop();
-      unsubscribe();
+  // Hata loglama fonksiyonu
+  const logError = useCallback(async (error: any, context: string) => {
+    const errorInfo = {
+      timestamp: new Date().toISOString(),
+      context,
+      error: {
+        message: error?.message || 'Unknown error',
+        code: error?.code || 'UNKNOWN',
+        details: error?.details || null
+      },
+      userAgent: navigator.userAgent,
+      url: window.location.href
     };
-  }, []);
 
-  // Veri yükleme fonksiyonu
-  const loadData = useCallback(async () => {
-    if (!user?.id) {
-      console.log('❌ No user ID available for data loading');
-      return;
+    console.error('🚨 Application Error:', errorInfo);
+
+    // Log service'e gönder
+    if (user?.id) {
+      try {
+        await logService.logError(errorInfo, user.id, user.email);
+      } catch (logError) {
+        console.error('Error logging to service:', logError);
+      }
     }
-    
-    console.log('🔄 Starting data load for user:', user.id);
-    
-    // Offline mode kontrolü
-    if (isOfflineMode()) {
-      console.log('🔌 Offline mode active, loading from local storage...');
-      loadFromLocalStorage();
-      return;
-    }
-    
-    // Supabase bağlantı testi
-    console.log('🌐 Testing Supabase connection...');
-    const isConnected = await testSupabaseConnection();
-    console.log('🌐 Supabase connection result:', isConnected);
-    
-    if (!isConnected) {
-      console.warn('⚠️ Supabase connection failed, switching to offline mode');
-      toggleOfflineMode(true);
-      loadFromLocalStorage();
-      return;
-    }
+  }, [user]);
+
+  // Veri yükleme fonksiyonları
+  const loadSalaries = useCallback(async () => {
+    if (!user?.id) return;
     
     try {
-      console.log('🔄 Loading data for user:', user.id);
-      
-      // Mesai verilerini yükle
-      updateLoadingState('overtimes', { isLoading: true, error: undefined });
-      const overtimeData = await retryOperation(() => overtimeService.getAll(user.id));
-      console.log('✅ Overtime data loaded:', overtimeData.length, 'records');
-      
-      const convertedOvertimes = overtimeData.map(o => ({
-        id: o.id || '',
-        userId: o.userId,
-        employeeId: o.employeeId,
-        date: o.date,
-        hours: o.hours,
-        overtimeType: 'normal' as const,
-        hourlyRate: 150,
-        totalPayment: o.hours * 150,
-        description: o.description,
-        status: o.status || 'approved',
-        createdAt: o.created_at || new Date().toISOString(),
-        updatedAt: o.updated_at || new Date().toISOString()
-      }));
-      setOvertimes(convertedOvertimes);
-      updateLoadingState('overtimes', { isLoading: false });
-      
-      // İzin verilerini yükle
-      console.log('📅 Loading leave data...');
-      updateLoadingState('leaves', { isLoading: true, error: undefined });
-      const leaveData = await retryOperation(() => leaveService.getAll(user.id));
-      console.log('✅ Leave data loaded:', leaveData.length, 'records');
-      console.log('📅 Raw leave data:', leaveData);
-      
-      const convertedLeaves = leaveData.map(l => ({
-        id: l.id || '',
-        userId: l.userId,
-        employeeId: l.employeeId,
-        startDate: l.startDate,
-        endDate: l.endDate,
-        daysUsed: l.daysUsed || 1,
-        status: l.status,
-        reason: l.reason,
-        leaveType: (() => {
-          switch (l.type) {
-            case 'annual': return 'annual' as const;
-            case 'sick': return 'maternity' as const;
-            case 'personal': return 'administrative' as const;
-            case 'other': return 'unpaid' as const;
-            default: return 'annual' as const;
-          }
-        })(),
-        type: l.type,
-        createdAt: l.created_at || new Date().toISOString(),
-        updatedAt: l.updated_at || new Date().toISOString()
-      }));
-      console.log('✅ Converted leaves:', convertedLeaves);
-      setLeaves(convertedLeaves);
-      updateLoadingState('leaves', { isLoading: false });
-      
-      // Maaş verilerini yükle
       updateLoadingState('salaries', { isLoading: true, error: undefined });
-      const salaryData = await retryOperation(() => salaryService.getAll(user.id));
-      console.log('✅ Salary data loaded:', salaryData.length, 'records');
+      const data = await retryOperation(() => salaryService.getAll(user.id));
       
-      const convertedSalaries = salaryData.map(s => ({
-        id: s.id || '',
-        userId: s.userId,
-        month: s.month,
-        year: s.year,
-        grossSalary: s.grossSalary,
-        netSalary: s.netSalary,
-        bonus: s.bonus,
-        besDeduction: s.besDeduction,
-        createdAt: s.created_at || new Date().toISOString(),
-        updatedAt: s.updated_at || new Date().toISOString()
-      }));
-      setSalaries(convertedSalaries);
+      setSalaries(data);
       updateLoadingState('salaries', { isLoading: false });
-      
-      // Tatil verilerini yükle
-      const defaultHolidays = turkeyHolidays.map(h => ({ 
-        ...h, 
-        id: Date.now().toString() + Math.random().toString(36).slice(2) 
-      }));
-      setHolidays(defaultHolidays);
-      updateLoadingState('holidays', { isLoading: false });
-      
-      console.log('✅ All data loaded successfully');
     } catch (error: any) {
-      console.error('❌ Error loading data:', error);
-      logError(error, 'loadData');
+      logError(error, 'loadSalaries');
       updateLoadingState('salaries', { isLoading: false, error: error.message });
-      updateLoadingState('overtimes', { isLoading: false, error: error.message });
-      updateLoadingState('leaves', { isLoading: false, error: error.message });
-      updateLoadingState('holidays', { isLoading: false, error: error.message });
     }
-  }, [user?.id]);
+  }, [user?.id, updateLoadingState, logError]);
 
-  // Local storage'dan veri yükleme
-  const loadFromLocalStorage = useCallback(() => {
-    console.log('💾 Loading data from local storage...');
+  const loadOvertimes = useCallback(async () => {
+    if (!user?.id) return;
     
     try {
-      // Salaries
-      const storedSalaries = localStorage.getItem(`salaries_${user?.id}`);
-      if (storedSalaries) {
-        setSalaries(JSON.parse(storedSalaries));
-        console.log('✅ Salaries loaded from local storage');
-      }
+      updateLoadingState('overtimes', { isLoading: true, error: undefined });
+      const data = await retryOperation(() => overtimeService.getAll(user.id));
       
-      // Overtimes
-      const storedOvertimes = localStorage.getItem(`overtimes_${user?.id}`);
-      if (storedOvertimes) {
-        setOvertimes(JSON.parse(storedOvertimes));
-        console.log('✅ Overtimes loaded from local storage');
-      }
-      
-      // Leaves
-      const storedLeaves = localStorage.getItem(`leaves_${user?.id}`);
-      if (storedLeaves) {
-        setLeaves(JSON.parse(storedLeaves));
-        console.log('✅ Leaves loaded from local storage');
-      }
-      
-      // Holidays
-      const storedHolidays = localStorage.getItem('holidays');
-      if (storedHolidays) {
-        setHolidays(JSON.parse(storedHolidays));
-        console.log('✅ Holidays loaded from local storage');
-      }
-    } catch (error) {
-      console.error('❌ Error loading from local storage:', error);
+      setOvertimes(data);
+      updateLoadingState('overtimes', { isLoading: false });
+    } catch (error: any) {
+      logError(error, 'loadOvertimes');
+      updateLoadingState('overtimes', { isLoading: false, error: error.message });
     }
-  }, [user?.id]);
+  }, [user?.id, updateLoadingState, logError]);
 
-      // Load data from Supabase when user changes
-  useEffect(() => {
-    if (user?.id) {
-      loadData();
-    } else {
-      // Kullanıcı yoksa verileri temizle
-      setSalaries([]);
-      setOvertimes([]);
-      setLeaves([]);
-      clearErrors();
-    }
-  }, [user?.id, loadData, clearErrors]);
-
-  // Save data to local storage whenever data changes
-  useEffect(() => {
-    if (user?.id) {
-      localStorage.setItem(`salaries_${user.id}`, JSON.stringify(salaries));
-      localStorage.setItem(`overtimes_${user.id}`, JSON.stringify(overtimes));
-      localStorage.setItem(`leaves_${user.id}`, JSON.stringify(leaves));
-    }
-  }, [salaries, overtimes, leaves, user?.id]);
-
-  // Save holidays to localStorage whenever data changes
-  useEffect(() => {
-    localStorage.setItem('holidays', JSON.stringify(holidays));
-  }, [holidays]);
-
-  // Refresh data function
-  const refreshData = useCallback(async () => {
-    await loadData();
-  }, [loadData]);
-
-  // Offline mode toggle function
-  const handleToggleOfflineMode = useCallback((enabled: boolean) => {
-    toggleOfflineMode(enabled);
-    setIsOffline(enabled);
+  const loadLeaves = useCallback(async () => {
+    if (!user?.id) return;
     
-    if (enabled) {
-      loadFromLocalStorage();
-    } else {
-      loadData();
+    try {
+      updateLoadingState('leaves', { isLoading: true, error: undefined });
+      const data = await retryOperation(() => leaveService.getAll(user.id));
+      
+      setLeaves(data);
+      updateLoadingState('leaves', { isLoading: false });
+    } catch (error: any) {
+      logError(error, 'loadLeaves');
+      updateLoadingState('leaves', { isLoading: false, error: error.message });
     }
-  }, [loadFromLocalStorage, loadData]);
+  }, [user?.id, updateLoadingState, logError]);
+
+  // Tüm verileri yenile
+  const refreshData = useCallback(async () => {
+    if (!user?.id) return;
+    
+    await Promise.all([
+      loadSalaries(),
+      loadOvertimes(),
+      loadLeaves()
+    ]);
+  }, [user?.id, loadSalaries, loadOvertimes, loadLeaves]);
+
+  // Hataları temizle
+  const clearErrors = useCallback(() => {
+    setLoadingStates({
+      salaries: { isLoading: false, error: undefined },
+      overtimes: { isLoading: false, error: undefined },
+      leaves: { isLoading: false, error: undefined },
+      holidays: { isLoading: false, error: undefined }
+    });
+  }, []);
 
   // Salary functions
-  const addSalary = async (salary: Omit<Salary, 'id' | 'createdAt'>): Promise<ApiResponse<Salary>> => {
-    console.log('🔍 addSalary called - User:', user, 'Loading:', isLoading);
-    console.log('🔍 User ID check:', user?.id ? `ID: ${user.id}` : 'No ID');
-    
+  const addSalary = async (salary: Omit<Salary, 'id' | 'created_at'>): Promise<ApiResponse<Salary>> => {
     if (isLoading) {
       return { success: false, error: 'Kullanıcı bilgileri yükleniyor, lütfen bekleyin' };
     }
     if (!user?.id) {
-      console.error('❌ No user ID available for salary operation');
       return { success: false, error: 'Kullanıcı girişi gerekli. Lütfen tekrar giriş yapın.' };
     }
     
     try {
-      // Validasyon
-      const validation = formValidators.salaryForm(salary);
-      if (!validation.isValid) {
-        return { success: false, error: validation.errors[0]?.message, errors: validation.errors };
-      }
-      
       // Input sanitization
       const sanitizedSalary = {
         ...salary,
@@ -407,8 +249,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       
       const newSalaryData = {
         ...sanitizedSalary,
-        userId: user.id,
-        updatedAt: undefined // Supabase service expects string, not Timestamp
+        userId: user.id
       };
       
       const id = await retryOperation(() => salaryService.add(newSalaryData));
@@ -416,7 +257,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         const newSalary: Salary = {
           ...sanitizedSalary,
           id,
-          createdAt: new Date().toISOString()
+          created_at: new Date().toISOString()
         };
         setSalaries(prev => [...prev, newSalary]);
         updateLoadingState('salaries', { isLoading: false });
@@ -448,9 +289,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       updateLoadingState('salaries', { isLoading: true, error: undefined });
       
-      // Timestamp dönüşümü için salary'yi temizle
-      const { createdAt, updatedAt, ...salaryWithoutTimestamps } = salary;
-      const success = await retryOperation(() => salaryService.update(id, salaryWithoutTimestamps));
+      const success = await retryOperation(() => salaryService.update(id, salary));
       if (success) {
         setSalaries(prev => prev.map(s => s.id === id ? { ...s, ...salary } : s));
         updateLoadingState('salaries', { isLoading: false });
@@ -497,37 +336,38 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     
     try {
       // Validasyon
-      const validation = formValidators.overtimeForm(overtime);
-      if (!validation.isValid) {
-        return { success: false, error: validation.errors[0]?.message, errors: validation.errors };
-      }
-      
-      updateLoadingState('overtimes', { isLoading: true, error: undefined });
-      
-      console.log('🔄 Adding overtime for user:', user.id);
-      console.log('📝 Overtime data:', overtime);
-      
-      // Supabase için uyumlu veri oluştur
-      const supabaseOvertime = {
-        employeeId: user.id,
+      const validation = formValidators.overtimeForm({
         date: overtime.date,
         hours: overtime.hours,
-        description: overtime.description || 'Mesai',
-        status: 'approved' as const,
+        overtimeType: overtime.description || '',
+        hourlyRate: 0 // Bu değer daha sonra hesaplanacak
+      });
+      if (!validation.isValid) {
+        return { success: false, error: validation.errors.map(e => e.message).join(', ') };
+      }
+
+      updateLoadingState('overtimes', { isLoading: true, error: undefined });
+      
+      const newOvertimeData = {
+        ...overtime,
         userId: user.id
       };
       
-      const id = await retryOperation(() => overtimeService.add(supabaseOvertime));
+      const id = await retryOperation(() => overtimeService.add(newOvertimeData));
       if (id) {
         const newOvertime: Overtime = {
           ...overtime,
           id,
-          userId: user.id,
-          employeeId: user.id
+          userId: user.id
         };
-        console.log('✅ Overtime added successfully:', newOvertime);
         setOvertimes(prev => [...prev, newOvertime]);
         updateLoadingState('overtimes', { isLoading: false });
+        
+        // Log başarılı mesai ekleme
+        if (user) {
+          await logService.logDataOperation('overtime', 'create', 'overtime', user.id, user.email, true);
+        }
+        
         return { success: true, data: newOvertime };
       } else {
         throw new Error('Mesai eklenirken hata oluştu');
@@ -536,6 +376,12 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       logError(error, 'addOvertime');
       const errorMessage = error?.message || 'Mesai eklenirken hata oluştu';
       updateLoadingState('overtimes', { isLoading: false, error: errorMessage });
+      
+      // Log başarısız mesai ekleme
+      if (user) {
+        await logService.logDataOperation('overtime', 'create', 'overtime', user.id, user.email, false, undefined, undefined, errorMessage);
+      }
+      
       return { success: false, error: errorMessage };
     }
   };
@@ -544,9 +390,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       updateLoadingState('overtimes', { isLoading: true, error: undefined });
       
-      // Timestamp dönüşümü için overtime'yi temizle
-      const { createdAt, updatedAt, ...overtimeWithoutTimestamps } = overtime;
-      const success = await retryOperation(() => overtimeService.update(id, overtimeWithoutTimestamps));
+      const success = await retryOperation(() => overtimeService.update(id, overtime));
       if (success) {
         setOvertimes(prev => prev.map(o => o.id === id ? { ...o, ...overtime } : o));
         updateLoadingState('overtimes', { isLoading: false });
@@ -564,13 +408,11 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const deleteOvertime = async (id: string): Promise<ApiResponse<boolean>> => {
     try {
-      console.log('🔄 Deleting overtime:', id);
       updateLoadingState('overtimes', { isLoading: true, error: undefined });
       
       const success = await retryOperation(() => overtimeService.delete(id));
       if (success) {
         setOvertimes(prev => prev.filter(o => o.id !== id));
-        console.log('✅ Overtime deleted successfully');
         updateLoadingState('overtimes', { isLoading: false });
         return { success: true, data: true };
       } else {
@@ -594,59 +436,40 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
     
     try {
-      // Validasyon - tip uyumluluğu için gerekli alanları kontrol et
-      const validationData = {
+      // Validasyon
+      const validation = formValidators.leaveForm({
         startDate: leave.startDate,
         endDate: leave.endDate,
-        daysUsed: leave.daysUsed,
+        daysUsed: 0, // Bu değer daha sonra hesaplanacak
         reason: leave.reason || '',
-        leaveType: leave.leaveType
-      };
-      const validation = formValidators.leaveForm(validationData);
+        leaveType: leave.type
+      });
       if (!validation.isValid) {
-        return { success: false, error: validation.errors[0]?.message, errors: validation.errors };
+        return { success: false, error: validation.errors.map(e => e.message).join(', ') };
       }
-      
+
       updateLoadingState('leaves', { isLoading: true, error: undefined });
       
-      // Supabase service için uyumlu veri oluştur
       const newLeaveData = {
-        employeeId: user.id,
-        startDate: leave.startDate,
-        endDate: leave.endDate,
-        daysUsed: leave.daysUsed,
-        type: (() => {
-          switch (leave.leaveType) {
-            case 'annual': return 'annual' as const;
-            case 'maternity': return 'sick' as const;
-            case 'bereavement': return 'sick' as const;
-            case 'administrative': return 'personal' as const;
-            case 'paid': return 'personal' as const;
-            case 'unpaid': return 'personal' as const;
-            default: return 'personal' as const;
-          }
-        })(),
-        reason: leave.reason || '',
-        status: 'approved' as const, // Onay beklemesin
+        ...leave,
         userId: user.id
       };
-      
-      console.log('🔄 Adding leave with data:', newLeaveData);
       
       const id = await retryOperation(() => leaveService.add(newLeaveData));
       if (id) {
         const newLeave: Leave = {
           ...leave,
           id,
-          userId: user.id,
-          employeeId: user.id
+          userId: user.id
         };
-        console.log('✅ Leave added successfully:', newLeave);
         setLeaves(prev => [...prev, newLeave]);
         updateLoadingState('leaves', { isLoading: false });
-        if (toast) {
-          toast.showSuccess('İzin talebi başarıyla oluşturuldu!');
+        
+        // Log başarılı izin ekleme
+        if (user) {
+          await logService.logDataOperation('leave', 'create', 'leave', user.id, user.email, true);
         }
+        
         return { success: true, data: newLeave };
       } else {
         throw new Error('İzin eklenirken hata oluştu');
@@ -655,9 +478,12 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       logError(error, 'addLeave');
       const errorMessage = error?.message || 'İzin eklenirken hata oluştu';
       updateLoadingState('leaves', { isLoading: false, error: errorMessage });
-      if (toast) {
-        toast.showError(errorMessage);
+      
+      // Log başarısız izin ekleme
+      if (user) {
+        await logService.logDataOperation('leave', 'create', 'leave', user.id, user.email, false, undefined, undefined, errorMessage);
       }
+      
       return { success: false, error: errorMessage };
     }
   };
@@ -666,9 +492,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       updateLoadingState('leaves', { isLoading: true, error: undefined });
       
-      // Timestamp dönüşümü için leave'yi temizle
-      const { createdAt, updatedAt, ...leaveWithoutTimestamps } = leave;
-      const success = await retryOperation(() => leaveService.update(id, leaveWithoutTimestamps));
+      const success = await retryOperation(() => leaveService.update(id, leave));
       if (success) {
         setLeaves(prev => prev.map(l => l.id === id ? { ...l, ...leave } : l));
         updateLoadingState('leaves', { isLoading: false });
@@ -686,13 +510,11 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const deleteLeave = async (id: string): Promise<ApiResponse<boolean>> => {
     try {
-      console.log('🔄 Deleting leave:', id);
       updateLoadingState('leaves', { isLoading: true, error: undefined });
       
       const success = await retryOperation(() => leaveService.delete(id));
       if (success) {
         setLeaves(prev => prev.filter(l => l.id !== id));
-        console.log('✅ Leave deleted successfully');
         updateLoadingState('leaves', { isLoading: false });
         return { success: true, data: true };
       } else {
@@ -706,57 +528,71 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  // Holiday functions
+  // Holiday functions (local only)
   const addHoliday = async (holiday: Omit<Holiday, 'id'>): Promise<ApiResponse<Holiday>> => {
     try {
-      updateLoadingState('holidays', { isLoading: true, error: undefined });
-      
       const newHoliday: Holiday = {
         ...holiday,
         id: Date.now().toString()
       };
       setHolidays(prev => [...prev, newHoliday]);
-      updateLoadingState('holidays', { isLoading: false });
       return { success: true, data: newHoliday };
     } catch (error: any) {
-      logError(error, 'addHoliday');
-      const errorMessage = error?.message || 'Tatil eklenirken hata oluştu';
-      updateLoadingState('holidays', { isLoading: false, error: errorMessage });
-      return { success: false, error: errorMessage };
+      return { success: false, error: error.message };
     }
   };
 
   const updateHoliday = async (id: string, holiday: Partial<Holiday>): Promise<ApiResponse<boolean>> => {
     try {
-      updateLoadingState('holidays', { isLoading: true, error: undefined });
-      
       setHolidays(prev => prev.map(h => h.id === id ? { ...h, ...holiday } : h));
-      updateLoadingState('holidays', { isLoading: false });
       return { success: true, data: true };
     } catch (error: any) {
-      logError(error, 'updateHoliday');
-      const errorMessage = error?.message || 'Tatil güncellenirken hata oluştu';
-      updateLoadingState('holidays', { isLoading: false, error: errorMessage });
-      return { success: false, error: errorMessage };
+      return { success: false, error: error.message };
     }
   };
 
   const deleteHoliday = async (id: string): Promise<ApiResponse<boolean>> => {
     try {
-      updateLoadingState('holidays', { isLoading: true, error: undefined });
-      
       setHolidays(prev => prev.filter(h => h.id !== id));
-      updateLoadingState('holidays', { isLoading: false });
       return { success: true, data: true };
     } catch (error: any) {
-      logError(error, 'deleteHoliday');
-      const errorMessage = error?.message || 'Tatil silinirken hata oluştu';
-      updateLoadingState('holidays', { isLoading: false, error: errorMessage });
-      return { success: false, error: errorMessage };
+      return { success: false, error: error.message };
     }
   };
 
-  const contextValue = useMemo(() => ({
+  // Network monitoring
+  useEffect(() => {
+    // Connection monitor'u başlat
+    connectionMonitor.start();
+    
+    // Status change listener'ı ekle
+    const unsubscribe = connectionMonitor.onStatusChange((status) => {
+      setIsOffline(status === 'offline');
+      setNetworkQuality(status === 'online' ? 'good' : status);
+    });
+
+    // Cleanup function
+    return () => {
+      connectionMonitor.stop();
+      unsubscribe();
+    };
+  }, []);
+
+  // Offline mode toggle
+  const handleToggleOfflineMode = useCallback((enabled: boolean) => {
+    toggleOfflineMode(enabled);
+    setIsOffline(enabled);
+  }, []);
+
+  // Veri yükleme effect'i
+  useEffect(() => {
+    if (user?.id && !isLoading) {
+      refreshData();
+    }
+  }, [user?.id, isLoading, refreshData]);
+
+  // Context value
+  const contextValue = useMemo<DataContextType>(() => ({
     loadingStates,
     salaries,
     addSalary,
@@ -785,8 +621,6 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     overtimes,
     leaves,
     holidays,
-    refreshData,
-    clearErrors,
     isOffline,
     networkQuality,
     handleToggleOfflineMode

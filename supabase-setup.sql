@@ -1,3 +1,6 @@
+-- Supabase Tablo Kurulumu
+-- Bu dosyayı Supabase SQL Editor'da çalıştırın
+
 -- Enable Row Level Security
 -- Note: app.jwt_secret is automatically set by Supabase
 
@@ -56,10 +59,10 @@ CREATE TABLE IF NOT EXISTS salary_records (
     user_id UUID REFERENCES users(id) ON DELETE CASCADE,
     month VARCHAR(7) NOT NULL, -- YYYY-MM format
     year INTEGER NOT NULL,
-    gross_salary DECIMAL(10,2) NOT NULL,
+    base_salary DECIMAL(10,2) NOT NULL,
+    overtime_pay DECIMAL(10,2) DEFAULT 0,
+    deductions DECIMAL(10,2) DEFAULT 0,
     net_salary DECIMAL(10,2) NOT NULL,
-    bonus DECIMAL(10,2) DEFAULT 0,
-    bes_deduction DECIMAL(10,2) DEFAULT 0,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     UNIQUE(user_id, month, year)
@@ -94,6 +97,37 @@ ALTER TABLE overtime ENABLE ROW LEVEL SECURITY;
 ALTER TABLE salary_records ENABLE ROW LEVEL SECURITY;
 ALTER TABLE user_settings ENABLE ROW LEVEL SECURITY;
 
+-- Drop existing policies if they exist
+DROP POLICY IF EXISTS "Users can view their own data" ON users;
+DROP POLICY IF EXISTS "Admins can view all users" ON users;
+DROP POLICY IF EXISTS "Users can update their own data" ON users;
+DROP POLICY IF EXISTS "Users can insert their own data" ON users;
+
+DROP POLICY IF EXISTS "Users can view their own profile" ON user_profiles;
+DROP POLICY IF EXISTS "Admins can view all profiles" ON user_profiles;
+DROP POLICY IF EXISTS "Users can update their own profile" ON user_profiles;
+DROP POLICY IF EXISTS "Users can insert their own profile" ON user_profiles;
+
+DROP POLICY IF EXISTS "Users can view their own leaves" ON leaves;
+DROP POLICY IF EXISTS "Admins can view all leaves" ON leaves;
+DROP POLICY IF EXISTS "Users can insert their own leaves" ON leaves;
+DROP POLICY IF EXISTS "Admins can update leave status" ON leaves;
+
+DROP POLICY IF EXISTS "Users can view their own overtime" ON overtime;
+DROP POLICY IF EXISTS "Admins can view all overtime" ON overtime;
+DROP POLICY IF EXISTS "Users can insert their own overtime" ON overtime;
+DROP POLICY IF EXISTS "Admins can update overtime status" ON overtime;
+
+DROP POLICY IF EXISTS "Users can view their own salary records" ON salary_records;
+DROP POLICY IF EXISTS "Admins can view all salary records" ON salary_records;
+DROP POLICY IF EXISTS "Admins can insert salary records" ON salary_records;
+DROP POLICY IF EXISTS "Admins can update salary records" ON salary_records;
+
+DROP POLICY IF EXISTS "Users can view their own settings" ON user_settings;
+DROP POLICY IF EXISTS "Admins can view all settings" ON user_settings;
+DROP POLICY IF EXISTS "Users can update their own settings" ON user_settings;
+DROP POLICY IF EXISTS "Users can insert their own settings" ON user_settings;
+
 -- Create RLS policies for users table
 CREATE POLICY "Users can view their own data" ON users
     FOR SELECT USING (auth.uid() = id);
@@ -108,6 +142,9 @@ CREATE POLICY "Admins can view all users" ON users
 
 CREATE POLICY "Users can update their own data" ON users
     FOR UPDATE USING (auth.uid() = id);
+
+CREATE POLICY "Users can insert their own data" ON users
+    FOR INSERT WITH CHECK (auth.uid() = id);
 
 -- Create RLS policies for user_profiles table
 CREATE POLICY "Users can view their own profile" ON user_profiles
@@ -246,3 +283,7 @@ CREATE TRIGGER update_salary_records_updated_at BEFORE UPDATE ON salary_records
 
 CREATE TRIGGER update_user_settings_updated_at BEFORE UPDATE ON user_settings
     FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+-- Test data insertion (optional)
+-- INSERT INTO users (id, email, name, role, start_date) VALUES 
+-- ('7ae2ff65-044d-49eb-9689-0267a5523adb', 'abdulkadir06akcan@gmail.com', 'Abdulkadir Akcan', 'user', '2025-08-08');

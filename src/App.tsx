@@ -19,9 +19,7 @@ import Settings from './components/Settings/Settings';
 import CompensationCalculators from './components/Calculators/CompensationCalculators';
 // Supabase bağlantı testi (sadece development ortamında)
 if (import.meta.env.DEV) {
-  console.log('=== SUPABASE CONNECTION TEST ===');
   console.log('✅ Supabase configuration loaded');
-  console.log('=== END SUPABASE TEST ===');
 }
 
 const AuthWrapper: React.FC = () => {
@@ -59,6 +57,11 @@ const MainAppContent: React.FC = () => {
   const { isCollapsed } = useSidebar();
   const [activeTab, setActiveTab] = useState('dashboard');
 
+  // Debug için console log (sadece development'ta)
+  if (import.meta.env.DEV) {
+    console.log('🔄 MainAppContent render:', { user: user?.id, isLoading, activeTab });
+  }
+
   // Hash-based navigation
   useEffect(() => {
     const handleHashChange = () => {
@@ -76,19 +79,26 @@ const MainAppContent: React.FC = () => {
     return () => window.removeEventListener('hashchange', handleHashChange);
   }, []);
 
-  // ActiveTab değiştiğinde hash'i güncelle
+  // ActiveTab değiştiğinde hash'i güncelle (sadece programatik değişiklikler için)
   useEffect(() => {
-    if (activeTab !== 'dashboard') {
-      window.location.hash = `#${activeTab}`;
-    } else {
-      window.location.hash = '';
+    const currentHash = window.location.hash.replace('#', '');
+    if (activeTab !== currentHash) {
+      if (activeTab !== 'dashboard') {
+        window.location.hash = `#${activeTab}`;
+      } else {
+        window.location.hash = '';
+      }
     }
   }, [activeTab]);
 
-  if (isLoading) {
+  // Geçici olarak loading kontrolünü devre dışı bırak
+  if (false && isLoading) {
     return (
       <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p className="text-gray-600 dark:text-gray-400">Yükleniyor...</p>
+        </div>
       </div>
     );
   }
@@ -139,11 +149,9 @@ const MainAppContent: React.FC = () => {
 
 const MainApp: React.FC = () => {
   return (
-    <SettingsProvider>
-      <SidebarProvider>
-        <MainAppContent />
-      </SidebarProvider>
-    </SettingsProvider>
+    <SidebarProvider>
+      <MainAppContent />
+    </SidebarProvider>
   );
 };
 
@@ -153,7 +161,9 @@ function App() {
       <ToastProvider>
         <AuthProvider>
           <DataProvider>
-            <MainApp />
+            <SettingsProvider>
+              <MainApp />
+            </SettingsProvider>
           </DataProvider>
         </AuthProvider>
       </ToastProvider>

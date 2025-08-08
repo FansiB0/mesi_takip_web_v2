@@ -7,6 +7,7 @@ import LoadingSpinner from '../LoadingSpinner';
 import ErrorDisplay from '../ErrorDisplay';
 import EmptyState from '../EmptyState';
 import NetworkStatus from '../NetworkStatus';
+import DebugPanel from '../DebugPanel';
 import { 
   DollarSign, 
   Clock, 
@@ -589,6 +590,13 @@ const Dashboard: React.FC = () => {
             </div>
           )}
         </div>
+
+        {/* Debug Panel - Sadece development modunda göster */}
+        {import.meta.env.DEV && (
+          <div className="col-span-full">
+            <DebugPanel />
+          </div>
+        )}
       </div>
     </div>
   );

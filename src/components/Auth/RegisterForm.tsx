@@ -3,7 +3,11 @@ import { User, Mail, Lock, Calendar, Eye, EyeOff } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useToast } from '../../contexts/ToastContext';
 
-const RegisterForm: React.FC = () => {
+interface RegisterFormProps {
+  onSwitchToLogin?: () => void;
+}
+
+const RegisterForm: React.FC<RegisterFormProps> = ({ onSwitchToLogin }) => {
   const { register } = useAuth();
   const { showSuccess, showError } = useToast();
   const [showPassword, setShowPassword] = useState(false);
@@ -51,18 +55,28 @@ const RegisterForm: React.FC = () => {
     }
 
     try {
+      if (import.meta.env.DEV) {
+        console.log('🔄 Starting registration process...');
+      }
       const result = await register(formData.name, formData.email, formData.password, formData.startDate);
+      
+      if (import.meta.env.DEV) {
+        console.log('✅ Registration result:', result);
+      }
       
       if (result.success) {
         showSuccess('Hesap başarıyla oluşturuldu! Giriş yapabilirsiniz.');
-        // 2 saniye sonra login formuna geç
-        setTimeout(() => {
-          window.location.hash = '#login';
-        }, 2000);
+        // Login formuna geç
+        if (onSwitchToLogin) {
+          onSwitchToLogin();
+        }
       } else {
         showError(result.error || 'Kayıt sırasında bir hata oluştu');
       }
     } catch (error: any) {
+      if (import.meta.env.DEV) {
+        console.error('❌ Registration error:', error);
+      }
       showError(error.message || 'Kayıt sırasında bir hata oluştu');
     }
   };
@@ -191,8 +205,19 @@ const RegisterForm: React.FC = () => {
           <p className="text-gray-600 dark:text-gray-400">
             Zaten hesabınız var mı?{' '}
             <button
-              onClick={() => window.location.hash = '#login'}
-              className="text-blue-600 hover:text-blue-700 font-medium"
+              type="button"
+              onClick={() => {
+                if (import.meta.env.DEV) {
+                  console.log('🔄 Navigating to login...');
+                }
+                if (onSwitchToLogin) {
+                  onSwitchToLogin();
+                } else {
+                  window.location.hash = '#login';
+                  window.location.reload();
+                }
+              }}
+              className="text-blue-600 hover:text-blue-700 font-medium cursor-pointer"
             >
               Giriş yapın
             </button>

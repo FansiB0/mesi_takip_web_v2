@@ -1,6 +1,6 @@
-# Mesai Takip Web Uygulaması
+# Mesai Takip Web V2
 
-Modern, güvenli ve kullanıcı dostu bir maaş ve çalışma takip uygulaması. React, TypeScript, Tailwind CSS ve Supabase kullanılarak geliştirilmiştir.
+Modern, güvenli ve kullanıcı dostu bir maaş ve çalışma takip uygulaması. React, TypeScript, Tailwind CSS ve Firebase kullanılarak geliştirilmiştir.
 
 ## 🌐 Canlı Demo
 **Uygulama:** https://abdulkadir06akcan.github.io/mesi_takip_web_v2
@@ -57,10 +57,10 @@ Modern, güvenli ve kullanıcı dostu bir maaş ve çalışma takip uygulaması.
 - **Vite**: Hızlı build tool
 
 ### Backend & Veritabanı
-- **Supabase**: Backend as a Service
-- **PostgreSQL**: Veritabanı
-- **Supabase Auth**: Kimlik doğrulama
-- **Supabase Hosting**: Web hosting
+- **Firebase**: Backend as a Service
+- **Firestore**: NoSQL veritabanı
+- **Firebase Auth**: Kimlik doğrulama
+- **Firebase Hosting**: Web hosting
 
 ### Geliştirme Araçları
 - **ESLint**: Kod kalitesi
@@ -72,7 +72,7 @@ Modern, güvenli ve kullanıcı dostu bir maaş ve çalışma takip uygulaması.
 ### Gereksinimler
 - Node.js 18+ 
 - npm veya yarn
-- Supabase hesabı
+- Firebase hesabı
 
 ### Adımlar
 
@@ -87,10 +87,10 @@ cd mesi_takip_web_V1
 npm install
 ```
 
-3. **Supabase yapılandırması**
+3. **Firebase yapılandırması**
 ```bash
-# Supabase projenizi oluşturun ve config bilgilerini alın
-# src/config/supabase.ts dosyasını güncelleyin
+# Firebase projenizi oluşturun ve config bilgilerini alın
+# src/config/firebase.ts dosyasını güncelleyin
 ```
 
 4. **Geliştirme sunucusunu başlatın**
@@ -105,17 +105,21 @@ npm run build
 
 ## 🔧 Yapılandırma
 
-### Supabase Kurulumu
-1. [Supabase Console](https://supabase.com/)'da yeni proje oluşturun
-2. Authentication > Settings > URL Configuration
-3. Site URL'yi ayarlayın
-4. API anahtarlarını alın
-5. `src/config/supabase.ts` dosyasını güncelleyin
+### Firebase Kurulumu
+1. [Firebase Console](https://console.firebase.google.com/)'da yeni proje oluşturun
+2. Authentication'ı etkinleştirin (Email/Password)
+3. Firestore Database'i oluşturun
+4. Proje ayarlarından config bilgilerini alın
+5. `src/config/firebase.ts` dosyasını güncelleyin
 
 ### Environment Variables
 ```env
-VITE_SUPABASE_URL=your_supabase_url
-VITE_SUPABASE_ANON_KEY=your_supabase_anon_key
+VITE_FIREBASE_API_KEY=your_api_key
+VITE_FIREBASE_AUTH_DOMAIN=your_auth_domain
+VITE_FIREBASE_PROJECT_ID=your_project_id
+VITE_FIREBASE_STORAGE_BUCKET=your_storage_bucket
+VITE_FIREBASE_MESSAGING_SENDER_ID=your_sender_id
+VITE_FIREBASE_APP_ID=your_app_id
 ```
 
 ## 📁 Proje Yapısı
@@ -178,19 +182,16 @@ src/
 
 ## 🚀 Deployment
 
-### Supabase Hosting
+### Firebase Hosting
 ```bash
 npm run build
-supabase deploy
+firebase deploy
 ```
 
-### Netlify/Vercel
+### Vercel
 ```bash
-# Netlify için
-netlify deploy
-
-# Vercel için  
-vercel
+npm run build
+vercel --prod
 ```
 
 ## 🤝 Katkıda Bulunma

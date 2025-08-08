@@ -1,14 +1,18 @@
 import { createClient } from '@supabase/supabase-js'
 
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://paputejxuotwgzunxlma.supabase.co'
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBhcHV0ZWp4dW90d2d6dW54bG1hIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTQ1MzIwNDgsImV4cCI6MjA3MDEwODA0OH0.pEwgGE1ONYT9QvFS6TLyq4mnX8QyONrvuIqcFr8i8Vk'
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
+const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY
 
-console.log('🗄️ Supabase URL:', supabaseUrl)
-console.log('🗄️ Supabase Anon Key:', supabaseAnonKey ? '***' + supabaseAnonKey.slice(-10) : 'NOT SET')
+if (import.meta.env.DEV) {
+  console.log('🗄️ Supabase URL:', supabaseUrl)
+  console.log('🗄️ Supabase Anon Key:', supabaseAnonKey ? '***' + supabaseAnonKey.slice(-10) : 'NOT SET')
+}
 
 if (!supabaseUrl || !supabaseAnonKey) {
   console.error('❌ Supabase environment variables not found!')
   console.error('Please check your .env file')
+  console.error('Make sure you have created a .env file with VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY')
+  throw new Error('Supabase environment variables are required')
 }
 
 export const supabase = createClient(supabaseUrl, supabaseAnonKey)
@@ -17,32 +21,32 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey)
 export interface Database {
   public: {
     Tables: {
-      users: {
-        Row: {
-          id: string
-          email: string
-          name: string
-          role: 'admin' | 'user'
-          created_at: string
-          updated_at: string
-        }
-        Insert: {
-          id?: string
-          email: string
-          name: string
-          role?: 'admin' | 'user'
-          created_at?: string
-          updated_at?: string
-        }
-        Update: {
-          id?: string
-          email?: string
-          name?: string
-          role?: 'admin' | 'user'
-          created_at?: string
-          updated_at?: string
-        }
-      }
+             users: {
+         Row: {
+           id: string
+           email: string
+           name: string
+           role: 'admin' | 'user'
+           created_at: string
+           updated_at: string
+         }
+         Insert: {
+           id?: string
+           email: string
+           name: string
+           role?: 'admin' | 'user'
+           created_at?: string
+           updated_at?: string
+         }
+         Update: {
+           id?: string
+           email?: string
+           name?: string
+           role?: 'admin' | 'user'
+           created_at?: string
+           updated_at?: string
+         }
+       }
       user_profiles: {
         Row: {
           id: string
@@ -142,44 +146,67 @@ export interface Database {
           updated_at?: string
         }
       }
-      salary_records: {
-        Row: {
-          id: string
-          user_id: string
-          month: string
-          year: number
-          base_salary: number
-          overtime_pay: number
-          deductions: number
-          net_salary: number
-          created_at: string
-          updated_at: string
-        }
-        Insert: {
-          id?: string
-          user_id: string
-          month: string
-          year: number
-          base_salary: number
-          overtime_pay: number
-          deductions: number
-          net_salary: number
-          created_at?: string
-          updated_at?: string
-        }
-        Update: {
-          id?: string
-          user_id?: string
-          month?: string
-          year?: number
-          base_salary?: number
-          overtime_pay?: number
-          deductions?: number
-          net_salary?: number
-          created_at?: string
-          updated_at?: string
-        }
-      }
+             salary_records: {
+         Row: {
+           id: string
+           user_id: string
+           month: string
+           year: string
+           gross_salary: number
+           net_salary: number
+           bonus: number
+           bes_deduction: number
+           created_at: string
+           updated_at: string
+         }
+         Insert: {
+           id?: string
+           user_id: string
+           month: string
+           year: string
+           gross_salary: number
+           net_salary: number
+           bonus: number
+           bes_deduction: number
+           created_at?: string
+           updated_at?: string
+         }
+         Update: {
+           id?: string
+           user_id?: string
+           month?: string
+           year?: string
+           gross_salary?: number
+           net_salary?: number
+           bonus?: number
+           bes_deduction?: number
+           created_at?: string
+           updated_at?: string
+         }
+       }
+             user_settings: {
+         Row: {
+           id: string
+           user_id: string
+           settings: any
+           created_at: string
+           updated_at: string
+         }
+         Insert: {
+           id?: string
+           user_id: string
+           settings?: any
+           created_at?: string
+           updated_at?: string
+         }
+         Update: {
+           id?: string
+           user_id?: string
+           settings?: any
+           created_at?: string
+           updated_at?: string
+         }
+       }
     }
   }
 }

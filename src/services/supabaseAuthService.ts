@@ -1,5 +1,5 @@
 import { supabase } from '../config/supabase'
-import type { User, UserProfile } from '../types'
+import type { User } from '../types'
 
 export interface SupabaseUser {
   id: string
@@ -27,40 +27,124 @@ export const registerUser = async (userData: {
   password: string
   name: string
   role?: 'admin' | 'user'
+  startDate?: string
 }): Promise<{ user: SupabaseUser; profile: SupabaseUserProfile | null }> => {
   try {
-    // 1. Supabase Auth ile kullanıcı oluştur
+    if (import.meta.env.DEV) {
+      console.log('🔄 Starting Supabase registration for:', userData.email);
+    }
+    
+    // 1. Supabase Auth ile kullanıcı oluştur (email onayı olmadan)
     const { data: authData, error: authError } = await supabase.auth.signUp({
       email: userData.email,
       password: userData.password,
+      options: {
+        data: {
+          name: userData.name,
+          role: userData.role || 'user'
+        }
+      }
     })
 
-    if (authError) throw authError
+    if (authError) {
+      if (import.meta.env.DEV) {
+        console.error('❌ Auth signup error:', authError);
+      }
+      throw authError;
+    }
 
     if (!authData.user) {
       throw new Error('Kullanıcı oluşturulamadı')
     }
 
-    // 2. Users tablosuna kullanıcı bilgilerini ekle
-    const { data: userDataResult, error: userError } = await supabase
-      .from('users')
-      .insert({
-        id: authData.user.id,
-        email: userData.email,
-        name: userData.name,
-        role: userData.role || 'user',
-      })
-      .select()
-      .single()
+    if (import.meta.env.DEV) {
+      console.log('✅ Auth user created:', authData.user.id);
+    }
 
-    if (userError) throw userError
+    // 2. Users tablosuna kullanıcı bilgilerini ekle (eğer yoksa)
+    const userInsertData = {
+      id: authData.user.id,
+      email: userData.email,
+      name: userData.name,
+      role: userData.role || 'user',
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString()
+    };
+
+    if (import.meta.env.DEV) {
+      console.log('🔄 Inserting user data:', userInsertData);
+    }
+
+    // Önce kullanıcının var olup olmadığını kontrol et
+    const { data: existingUser, error: checkError } = await supabase
+      .from('users')
+      .select('*')
+      .eq('email', userData.email)
+      .single();
+
+    let userDataResult;
+    if (checkError && checkError.code !== 'PGRST116') {
+      if (import.meta.env.DEV) {
+        console.error('❌ User check error:', checkError);
+      }
+      throw checkError;
+    }
+
+    if (existingUser) {
+      if (import.meta.env.DEV) {
+        console.log('✅ User already exists, updating...');
+      }
+      // Kullanıcı varsa güncelle
+      const { data: updatedUser, error: updateError } = await supabase
+        .from('users')
+        .update({
+          name: userData.name,
+          role: userData.role || 'user',
+          updated_at: new Date().toISOString()
+        })
+        .eq('email', userData.email)
+        .select()
+        .single();
+
+      if (updateError) {
+        if (import.meta.env.DEV) {
+          console.error('❌ User update error:', updateError);
+        }
+        throw updateError;
+      }
+      userDataResult = updatedUser;
+    } else {
+      if (import.meta.env.DEV) {
+        console.log('✅ User does not exist, creating...');
+      }
+      // Kullanıcı yoksa oluştur
+      const { data: newUser, error: insertError } = await supabase
+        .from('users')
+        .insert(userInsertData)
+        .select()
+        .single();
+
+      if (insertError) {
+        if (import.meta.env.DEV) {
+          console.error('❌ User insert error:', insertError);
+        }
+        throw insertError;
+      }
+      userDataResult = newUser;
+    }
+
+    if (import.meta.env.DEV) {
+      console.log('✅ User data inserted successfully:', userDataResult);
+    }
 
     return {
       user: userDataResult,
       profile: null
     }
   } catch (error) {
-    console.error('Supabase register error:', error)
+    if (import.meta.env.DEV) {
+      console.error('❌ Supabase register error:', error)
+    }
     throw error
   }
 }
@@ -68,15 +152,31 @@ export const registerUser = async (userData: {
 // Kullanıcı girişi
 export const loginUser = async (email: string, password: string): Promise<SupabaseUser> => {
   try {
+    if (import.meta.env.DEV) {
+      console.log('🔄 Attempting login with:', { email, password: '***' });
+    }
+    
     const { data, error } = await supabase.auth.signInWithPassword({
       email,
       password,
     })
 
-    if (error) throw error
+    if (error) {
+      if (import.meta.env.DEV) {
+        console.error('❌ Auth error:', error);
+      }
+      throw error;
+    }
 
     if (!data.user) {
+      if (import.meta.env.DEV) {
+        console.error('❌ No user data returned');
+      }
       throw new Error('Giriş başarısız')
+    }
+
+    if (import.meta.env.DEV) {
+      console.log('✅ Auth successful, user ID:', data.user.id);
     }
 
     // Users tablosundan kullanıcı bilgilerini al
@@ -86,11 +186,36 @@ export const loginUser = async (email: string, password: string): Promise<Supaba
       .eq('id', data.user.id)
       .single()
 
-    if (userError) throw userError
+    if (userError) {
+      if (import.meta.env.DEV) {
+        console.error('❌ User data fetch error:', userError);
+      }
+      // Eğer users tablosunda kullanıcı yoksa, auth kullanıcısından bilgileri al
+      if (userError.code === 'PGRST116') {
+        if (import.meta.env.DEV) {
+          console.log('⚠️ User not found in users table, creating from auth data...');
+        }
+        const fallbackUser: SupabaseUser = {
+          id: data.user.id,
+          email: data.user.email || '',
+          name: (data.user.user_metadata?.name as string) || 'Unknown User',
+          role: (data.user.user_metadata?.role as 'admin' | 'user') || 'user',
+          created_at: data.user.created_at || new Date().toISOString(),
+          updated_at: data.user.updated_at || new Date().toISOString()
+        };
+        return fallbackUser;
+      }
+      throw userError;
+    }
 
+    if (import.meta.env.DEV) {
+      console.log('✅ User data fetched:', userData);
+    }
     return userData
   } catch (error) {
-    console.error('Supabase login error:', error)
+    if (import.meta.env.DEV) {
+      console.error('Supabase login error:', error)
+    }
     throw error
   }
 }
@@ -101,7 +226,9 @@ export const logoutUser = async (): Promise<void> => {
     const { error } = await supabase.auth.signOut()
     if (error) throw error
   } catch (error) {
-    console.error('Supabase logout error:', error)
+    if (import.meta.env.DEV) {
+      console.error('Supabase logout error:', error)
+    }
     throw error
   }
 }
@@ -120,11 +247,30 @@ export const getCurrentUser = async (): Promise<SupabaseUser | null> => {
       .eq('id', user.id)
       .single()
 
-    if (error) throw error
+    if (error) {
+      // Eğer users tablosunda kullanıcı yoksa, auth kullanıcısından bilgileri al
+      if (error.code === 'PGRST116') {
+        if (import.meta.env.DEV) {
+          console.log('⚠️ User not found in users table, creating from auth data...');
+        }
+        const fallbackUser: SupabaseUser = {
+          id: user.id,
+          email: user.email || '',
+          name: (user.user_metadata?.name as string) || 'Unknown User',
+          role: (user.user_metadata?.role as 'admin' | 'user') || 'user',
+          created_at: user.created_at || new Date().toISOString(),
+          updated_at: user.updated_at || new Date().toISOString()
+        };
+        return fallbackUser;
+      }
+      throw error;
+    }
 
     return userData
   } catch (error) {
-    console.error('Supabase getCurrentUser error:', error)
+    if (import.meta.env.DEV) {
+      console.error('Supabase getCurrentUser error:', error)
+    }
     return null
   }
 }
@@ -132,6 +278,10 @@ export const getCurrentUser = async (): Promise<SupabaseUser | null> => {
 // Auth state değişikliklerini dinle
 export const onAuthStateChange = (callback: (user: SupabaseUser | null) => void) => {
   const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+    if (import.meta.env.DEV) {
+      console.log('🔄 Auth state change event:', event, session?.user?.id);
+    }
+    
     if (event === 'SIGNED_IN' && session?.user) {
       try {
         const { data: userData, error } = await supabase
@@ -140,19 +290,78 @@ export const onAuthStateChange = (callback: (user: SupabaseUser | null) => void)
           .eq('id', session.user.id)
           .single()
 
-        if (error) throw error
-        callback(userData)
+        if (error) {
+          // Eğer users tablosunda kullanıcı yoksa, auth kullanıcısından bilgileri al
+          if (error.code === 'PGRST116') {
+            if (import.meta.env.DEV) {
+              console.log('⚠️ User not found in users table, creating from auth data...');
+            }
+            const fallbackUser: SupabaseUser = {
+              id: session.user.id,
+              email: session.user.email || '',
+              name: (session.user.user_metadata?.name as string) || 'Unknown User',
+              role: (session.user.user_metadata?.role as 'admin' | 'user') || 'user',
+              created_at: session.user.created_at || new Date().toISOString(),
+              updated_at: session.user.updated_at || new Date().toISOString()
+            };
+            callback(fallbackUser);
+            return;
+          }
+          throw error;
+        }
+        
+        if (import.meta.env.DEV) {
+          console.log('✅ User data found in auth state change:', userData);
+        }
+        callback(userData);
       } catch (error) {
-        console.error('Auth state change error:', error)
-        callback(null)
+        if (import.meta.env.DEV) {
+          console.error('Auth state change error:', error);
+        }
+        callback(null);
       }
     } else if (event === 'SIGNED_OUT') {
-      callback(null)
+      if (import.meta.env.DEV) {
+        console.log('🔄 User signed out');
+      }
+      callback(null);
+    } else if (event === 'TOKEN_REFRESHED' && session?.user) {
+      // Token yenilendiğinde de kullanıcı bilgilerini al
+      try {
+        const { data: userData, error } = await supabase
+          .from('users')
+          .select('*')
+          .eq('id', session.user.id)
+          .single()
+
+        if (error) {
+          if (error.code === 'PGRST116') {
+            const fallbackUser: SupabaseUser = {
+              id: session.user.id,
+              email: session.user.email || '',
+              name: (session.user.user_metadata?.name as string) || 'Unknown User',
+              role: (session.user.user_metadata?.role as 'admin' | 'user') || 'user',
+              created_at: session.user.created_at || new Date().toISOString(),
+              updated_at: session.user.updated_at || new Date().toISOString()
+            };
+            callback(fallbackUser);
+            return;
+          }
+          throw error;
+        }
+        
+        callback(userData);
+      } catch (error) {
+        if (import.meta.env.DEV) {
+          console.error('Token refresh error:', error);
+        }
+        callback(null);
+      }
     }
-  })
+  });
   
-  return () => subscription.unsubscribe()
-}
+  return () => subscription.unsubscribe();
+};
 
 // Kullanıcı profili oluştur
 export const createUserProfile = async (profileData: {
@@ -173,7 +382,9 @@ export const createUserProfile = async (profileData: {
 
     return data
   } catch (error) {
-    console.error('Supabase createProfile error:', error)
+    if (import.meta.env.DEV) {
+      console.error('Supabase createProfile error:', error)
+    }
     throw error
   }
 }
@@ -194,7 +405,9 @@ export const getUserProfile = async (userId: string): Promise<SupabaseUserProfil
 
     return data
   } catch (error) {
-    console.error('Supabase getUserProfile error:', error)
+    if (import.meta.env.DEV) {
+      console.error('Supabase getUserProfile error:', error)
+    }
     return null
   }
 }
@@ -219,7 +432,9 @@ export const updateUserProfile = async (
 
     return data
   } catch (error) {
-    console.error('Supabase updateUserProfile error:', error)
+    if (import.meta.env.DEV) {
+      console.error('Supabase updateUserProfile error:', error)
+    }
     throw error
   }
 }

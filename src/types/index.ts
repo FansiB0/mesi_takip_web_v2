@@ -11,32 +11,42 @@ export interface User {
   updatedAt?: string;
 }
 
+export interface Employee {
+  id?: string;
+  name: string;
+  email: string;
+  department: string;
+  position: string;
+  salary: number;
+  startDate: string;
+  userId: string;
+  created_at?: string;
+  updated_at?: string;
+}
+
 export interface Salary {
-  id: string;
+  id?: string;
   userId: string;
   month: string;
-  year: number;
+  year: string;
   grossSalary: number;
   netSalary: number;
   bonus: number;
   besDeduction: number;
-  createdAt: string;
-  updatedAt?: string;
+  created_at?: string;
+  updated_at?: string;
 }
 
 export interface Overtime {
-  id: string;
+  id?: string;
   userId: string;
   employeeId?: string; // Supabase uyumluluğu için
   date: string;
   hours: number;
-  overtimeType: 'normal' | 'weekend' | 'holiday';
-  hourlyRate: number;
-  totalPayment: number;
   description?: string;
   status: 'pending' | 'approved' | 'rejected';
-  createdAt?: string;
-  updatedAt?: string;
+  created_at?: string;
+  updated_at?: string;
 }
 
 export interface Holiday {
@@ -48,18 +58,16 @@ export interface Holiday {
 }
 
 export interface Leave {
-  id: string;
+  id?: string;
   userId: string;
   employeeId?: string; // Supabase uyumluluğu için
   startDate: string;
   endDate: string;
-  daysUsed: number;
   status: 'pending' | 'approved' | 'rejected';
   reason?: string;
-  leaveType: 'paid' | 'unpaid' | 'annual' | 'maternity' | 'bereavement' | 'administrative';
-  type: 'annual' | 'sick' | 'personal' | 'other'; // Supabase uyumluluğu için
-  createdAt?: string;
-  updatedAt?: string;
+  type: 'annual' | 'sick' | 'personal' | 'other'; // ERD'ye göre
+  created_at?: string;
+  updated_at?: string;
 }
 
 export interface CompensationCalculation {

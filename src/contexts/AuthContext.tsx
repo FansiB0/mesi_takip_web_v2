@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { User } from '../types';
-import { loginUser, register as registerUser, logoutUser, onAuthStateChange, getCurrentUser } from '../services/authService';
+import { loginUser, registerUser, logoutUser, onAuthStateChange, getCurrentUser } from '../services/supabaseAuthService';
 import { userProfileService } from '../services/userProfileService';
 import { settingsService } from '../services/settingsService';
 import type { SupabaseUser } from '../services/supabaseAuthService';
@@ -27,71 +27,129 @@ export const useAuth = () => {
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(false); // Hemen false yap
 
   useEffect(() => {
-    // Supabase auth state listener
-    const unsubscribe = onAuthStateChange((supabaseUser: SupabaseUser | null) => {
-      console.log('🔄 Auth state changed:', supabaseUser ? 'User logged in' : 'User logged out');
-      if (supabaseUser) {
-        // Supabase kullanıcı bilgilerini kullan
-        const userData: User = {
-          id: supabaseUser.id,
-          name: supabaseUser.name,
-          email: supabaseUser.email,
-          startDate: new Date().toISOString().split('T')[0],
-          employeeType: 'normal'
-        };
-        setUser(userData);
-        console.log('✅ User set in context:', userData);
-        // localStorage'a kullanıcı ID'sini kaydet
-        localStorage.setItem('currentUser', supabaseUser.id);
-      } else {
-        setUser(null);
+    if (import.meta.env.DEV) {
+      console.log('🔄 Setting up auth state listener...');
+    }
+    
+    // Basit bir kontrol - hemen loading'i false yap
+    const initializeAuth = async () => {
+      try {
+        const currentUser = await getCurrentUser();
+        if (currentUser) {
+          if (import.meta.env.DEV) {
+            console.log('✅ Current user found:', currentUser);
+          }
+          const userData: User = {
+            id: currentUser.id,
+            name: currentUser.name,
+            email: currentUser.email,
+            startDate: new Date().toISOString().split('T')[0], // Varsayılan tarih
+            employeeType: 'normal'
+          };
+          setUser(userData);
+          localStorage.setItem('currentUser', currentUser.id);
+        } else {
+          if (import.meta.env.DEV) {
+            console.log('❌ No current user found');
+          }
+        }
+      } catch (error) {
+        if (import.meta.env.DEV) {
+          console.error('❌ Error checking current user:', error);
+        }
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    // Hemen başlat
+    initializeAuth();
+    
+    // Güvenlik için 3 saniye sonra loading'i false yap
+    const timeoutId = setTimeout(() => {
+      if (import.meta.env.DEV) {
+        console.log('⚠️ Loading timeout reached, forcing isLoading to false');
       }
       setIsLoading(false);
-    });
-
+    }, 3000);
+    
     return () => {
-      if (unsubscribe && typeof unsubscribe === 'function') {
-        unsubscribe();
-      }
+      clearTimeout(timeoutId);
     };
   }, []);
 
   const login = async (email: string, password: string): Promise<{ success: boolean; error?: string }> => {
     setIsLoading(true);
     try {
-      const result = await loginUser(email, password);
-      return result;
-    } catch (error) {
-      console.error('Login error:', error);
-      return { success: false, error: 'Giriş sırasında bir hata oluştu' };
-    } finally {
+      if (import.meta.env.DEV) {
+        console.log('🔄 Starting login process...');
+      }
+      const user = await loginUser(email, password);
+      if (import.meta.env.DEV) {
+        console.log('✅ Login process completed');
+      }
+      
+      // User'ı hemen set et
+      const userData: User = {
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        startDate: new Date().toISOString().split('T')[0], // Varsayılan tarih
+        employeeType: 'normal'
+      };
+      setUser(userData);
+      localStorage.setItem('currentUser', user.id);
+      
+      if (import.meta.env.DEV) {
+        console.log('✅ User set in context immediately:', userData);
+      }
       setIsLoading(false);
+      
+      return { success: true };
+    } catch (error: any) {
+      if (import.meta.env.DEV) {
+        console.error('Login error:', error);
+      }
+      const errorMessage = error.message || 'Giriş sırasında bir hata oluştu';
+      setIsLoading(false);
+      return { success: false, error: errorMessage };
     }
   };
 
   const register = async (name: string, email: string, password: string, startDate: string) => {
     try {
-      const userData = { name, startDate, employeeType: 'normal' };
-      const result = await registerUser(email, password, userData);
-      
-      if (result.success && result.user) {
-        const user: User = {
-          id: (result.user as any).id || (result.user as any).uid,
-          name,
-          email,
-          startDate,
-          employeeType: 'normal'
-        };
-        setUser(user);
-        return { success: true };
-      } else {
-        return { success: false, error: 'Kayıt sırasında bir hata oluştu' };
+      if (import.meta.env.DEV) {
+        console.log('🔄 Starting registration in AuthContext...');
       }
+      const result = await registerUser({ email, password, name, role: 'user', startDate });
+      
+      if (import.meta.env.DEV) {
+        console.log('✅ Registration result from service:', result);
+      }
+      
+      // User'ı hemen set et
+      const userData: User = {
+        id: result.user.id,
+        name: result.user.name,
+        email: result.user.email,
+        startDate,
+        employeeType: 'normal'
+      };
+      setUser(userData);
+      localStorage.setItem('currentUser', result.user.id);
+      
+      if (import.meta.env.DEV) {
+        console.log('✅ User set in context immediately:', userData);
+      }
+      
+      return { success: true };
     } catch (error: any) {
-      console.error('Registration error:', error);
+      if (import.meta.env.DEV) {
+        console.error('❌ Registration error in AuthContext:', error);
+      }
       return { success: false, error: error.message || 'Kayıt sırasında bir hata oluştu' };
     }
   };
@@ -103,7 +161,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       // localStorage'dan kullanıcı ID'sini temizle
       localStorage.removeItem('currentUser');
     } catch (error) {
-      console.error('Logout error:', error);
+      if (import.meta.env.DEV) {
+        console.error('Logout error:', error);
+      }
     }
   };
 
@@ -111,16 +171,20 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const reloadUser = async () => {
     const currentUser = await getCurrentUser();
     if (currentUser) {
-      console.log('🔄 Reloading user data...');
+      if (import.meta.env.DEV) {
+        console.log('🔄 Reloading user data...');
+      }
       const userData: User = {
         id: currentUser.id,
         name: currentUser.name,
         email: currentUser.email,
-        startDate: new Date().toISOString().split('T')[0],
+        startDate: new Date().toISOString().split('T')[0], // Varsayılan tarih
         employeeType: 'normal'
       };
       setUser(userData);
-      console.log('✅ User reloaded:', userData);
+      if (import.meta.env.DEV) {
+        console.log('✅ User reloaded:', userData);
+      }
     }
   };
 
@@ -128,28 +192,41 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     if (!user) return;
     
     try {
-      console.log('🔄 Updating user profile in Supabase:', updates);
+      if (import.meta.env.DEV) {
+        console.log('🔄 Updating user profile in Supabase:', updates);
+      }
       
       // Supabase'de kullanıcı profilini güncelle
       const success = await userProfileService.updateProfile(user.id, updates);
       
       if (success) {
-        console.log('✅ User profile updated in Supabase successfully');
+        if (import.meta.env.DEV) {
+          console.log('✅ User profile updated in Supabase successfully');
+        }
         const updatedUser = { ...user, ...updates };
         setUser(updatedUser);
       } else {
-        console.error('❌ Failed to update user profile in Supabase');
+        if (import.meta.env.DEV) {
+          console.error('❌ Failed to update user profile in Supabase');
+        }
         // Yine de local state'i güncelle
         const updatedUser = { ...user, ...updates };
         setUser(updatedUser);
       }
     } catch (error) {
-      console.error('❌ Error updating user profile:', error);
+      if (import.meta.env.DEV) {
+        console.error('❌ Error updating user profile:', error);
+      }
       // Hata durumunda da local state'i güncelle
       const updatedUser = { ...user, ...updates };
       setUser(updatedUser);
     }
   };
+
+  // Debug için console log (sadece development'ta)
+  if (import.meta.env.DEV) {
+    console.log('🔄 AuthContext render:', { user: user?.id, isLoading });
+  }
 
   return (
     <AuthContext.Provider value={{ user, login, register, logout, isLoading, updateUser, reloadUser }}>

@@ -126,7 +126,15 @@ export const SettingsProvider: React.FC<SettingsProviderProps> = ({ children }) 
   const [settings, setSettings] = useState<UserSettings>(defaultSettings);
   const [isNewUser, setIsNewUser] = useState(false);
   const [showSalarySetupPrompt, setShowSalarySetupPrompt] = useState(false);
-  const { user } = useAuth();
+  
+  // useAuth'u güvenli şekilde kullan
+  let user = null;
+  try {
+    const authContext = useAuth();
+    user = authContext.user;
+  } catch (error) {
+    console.log('⚠️ Auth context not available yet, using null user');
+  }
 
       // Supabase'den ayarları yükle
   useEffect(() => {
@@ -134,60 +142,23 @@ export const SettingsProvider: React.FC<SettingsProviderProps> = ({ children }) 
       if (user?.id) {
         try {
                   console.log('🔄 Loading settings from Supabase for user:', user.id);
+        // Settings service'i aktif et
         const supabaseSettings = await settingsService.getSettings(user.id);
         
-        if (supabaseSettings) {
+                if (supabaseSettings) {
           console.log('✅ Settings loaded from Supabase:', supabaseSettings);
           // Supabase'den gelen ayarları bizim formatımıza dönüştür
-            const convertedSettings: UserSettings = {
-              profile: {
-                name: supabaseSettings.profile?.name || user?.name || defaultSettings.profile.name,
-                email: supabaseSettings.profile?.email || user?.email || defaultSettings.profile.email,
-                phone: supabaseSettings.profile?.phone || defaultSettings.profile.phone,
-                department: supabaseSettings.profile?.department || defaultSettings.profile.department,
-                position: supabaseSettings.profile?.position || defaultSettings.profile.position,
-                startDate: supabaseSettings.profile?.startDate || user?.startDate || defaultSettings.profile.startDate,
-                employeeId: supabaseSettings.profile?.employeeId || defaultSettings.profile.employeeId
-              },
-                              notifications: {
-                  salaryReminder: supabaseSettings.notifications?.salary || defaultSettings.notifications.salaryReminder,
-                  overtimeApproval: supabaseSettings.notifications?.overtime || defaultSettings.notifications.overtimeApproval,
-                  leaveStatus: supabaseSettings.notifications?.leave || defaultSettings.notifications.leaveStatus,
-                  holidayReminder: supabaseSettings.notifications?.salary || defaultSettings.notifications.holidayReminder,
-                  emailNotifications: supabaseSettings.notifications?.email || defaultSettings.notifications.emailNotifications,
-                  pushNotifications: supabaseSettings.notifications?.push || defaultSettings.notifications.pushNotifications,
-                  systemUpdates: supabaseSettings.notifications?.systemUpdates || defaultSettings.notifications.systemUpdates,
-                  securityAlerts: supabaseSettings.notifications?.securityAlerts || defaultSettings.notifications.securityAlerts,
-                  performanceReports: supabaseSettings.notifications?.performanceReports || defaultSettings.notifications.performanceReports,
-                  weeklySummary: supabaseSettings.notifications?.weeklySummary || defaultSettings.notifications.weeklySummary,
-                  monthlyReport: supabaseSettings.notifications?.monthlyReport || defaultSettings.notifications.monthlyReport,
-                  birthdayReminders: supabaseSettings.notifications?.birthdayReminders || defaultSettings.notifications.birthdayReminders,
-                  workAnniversary: supabaseSettings.notifications?.workAnniversary || defaultSettings.notifications.workAnniversary
-                },
-                              salary: {
-                  defaultNetSalary: supabaseSettings.salary?.defaultNetSalary || defaultSettings.salary.defaultNetSalary,
-                  defaultHourlyRate: supabaseSettings.salary?.defaultHourlyRate || defaultSettings.salary.defaultHourlyRate,
-                  currency: supabaseSettings.salary?.currency || defaultSettings.salary.currency,
-                  workingHoursPerDay: supabaseSettings.workingHours?.daily?.toString() || defaultSettings.salary.workingHoursPerDay,
-                  workingDaysPerWeek: supabaseSettings.salary?.workingDaysPerWeek || defaultSettings.salary.workingDaysPerWeek,
-                  annualLeaveEntitlement: supabaseSettings.salary?.annualLeaveEntitlement || defaultSettings.salary.annualLeaveEntitlement,
-                  besContribution: supabaseSettings.salary?.besContribution || defaultSettings.salary.besContribution
-                },
-                appearance: {
-                  theme: (supabaseSettings.theme === 'system' ? 'auto' : supabaseSettings.theme) || defaultSettings.appearance.theme,
-                  language: supabaseSettings.language || defaultSettings.appearance.language,
-                  dateFormat: defaultSettings.appearance.dateFormat,
-                  numberFormat: defaultSettings.appearance.numberFormat,
-                  fontSize: supabaseSettings.fontSize || defaultSettings.appearance.fontSize,
-                  colorScheme: supabaseSettings.colorScheme || defaultSettings.appearance.colorScheme,
-                  compactMode: supabaseSettings.compactMode || defaultSettings.appearance.compactMode,
-                  showAnimations: supabaseSettings.showAnimations || defaultSettings.appearance.showAnimations,
-                  sidebarCollapsed: supabaseSettings.sidebarCollapsed || defaultSettings.appearance.sidebarCollapsed,
-                  dashboardLayout: supabaseSettings.dashboardLayout || defaultSettings.appearance.dashboardLayout
-                }
-            };
-            setSettings(convertedSettings);
-                  } else {
+          const convertedSettings: UserSettings = {
+            ...defaultSettings,
+            profile: {
+              ...defaultSettings.profile,
+              name: user?.name || defaultSettings.profile.name,
+              email: user?.email || defaultSettings.profile.email,
+              startDate: user?.startDate || defaultSettings.profile.startDate
+            }
+          };
+          setSettings(convertedSettings);
+        } else {
           console.log('⚠️ No Supabase settings found, using defaults');
           // Kullanıcı bilgilerini kullanarak varsayılan ayarları oluştur
           const userBasedSettings: UserSettings = {

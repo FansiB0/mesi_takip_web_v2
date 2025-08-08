@@ -35,9 +35,13 @@ export const userProfileService = {
       console.log('🔄 Creating user profile for:', profile.uid);
       
       const { error } = await supabase
-        .from('user_profiles')
+        .from('users')
         .insert({
-          ...profile,
+          id: profile.uid,
+          email: profile.email,
+          name: profile.name,
+          role: profile.employeeType === 'admin' ? 'admin' : 'user',
+          start_date: profile.startDate,
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString()
         });
@@ -79,9 +83,9 @@ export const userProfileService = {
       console.log('🔄 Getting user profile for:', uid);
       
       const { data, error } = await supabase
-        .from('user_profiles')
+        .from('users')
         .select('*')
-        .eq('uid', uid)
+        .eq('id', uid)
         .single();
 
       if (error) {
@@ -122,12 +126,13 @@ export const userProfileService = {
       console.log('🔄 Updating user profile for:', uid);
       
       const { error } = await supabase
-        .from('user_profiles')
+        .from('users')
         .update({
-          ...updates,
+          name: updates.name,
+          email: updates.email,
           updated_at: new Date().toISOString()
         })
-        .eq('uid', uid);
+        .eq('id', uid);
 
       if (error) throw error;
       
@@ -170,7 +175,7 @@ export const userProfileService = {
   async getAllUsers(): Promise<UserProfile[]> {
     try {
       const { data, error } = await supabase
-        .from('user_profiles')
+        .from('users')
         .select('*')
         .order('created_at', { ascending: false });
 
@@ -186,12 +191,11 @@ export const userProfileService = {
   async updateUserStatus(uid: string, isActive: boolean): Promise<boolean> {
     try {
       const { error } = await supabase
-        .from('user_profiles')
+        .from('users')
         .update({
-          isActive,
           updated_at: new Date().toISOString()
         })
-        .eq('uid', uid);
+        .eq('id', uid);
 
       if (error) throw error;
       return true;
@@ -205,9 +209,9 @@ export const userProfileService = {
   async deleteUser(uid: string): Promise<boolean> {
     try {
       const { error } = await supabase
-        .from('user_profiles')
+        .from('users')
         .delete()
-        .eq('uid', uid);
+        .eq('id', uid);
 
       if (error) throw error;
       
@@ -225,12 +229,12 @@ export const userProfileService = {
   async updateUserRole(uid: string, role: 'normal' | 'manager' | 'admin'): Promise<boolean> {
     try {
       const { error } = await supabase
-        .from('user_profiles')
+        .from('users')
         .update({
-          employeeType: role,
+          role: role === 'admin' ? 'admin' : 'user',
           updated_at: new Date().toISOString()
         })
-        .eq('uid', uid);
+        .eq('id', uid);
 
       if (error) throw error;
       return true;
