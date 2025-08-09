@@ -3,6 +3,7 @@ export interface User {
   name: string;
   email: string;
   startDate: string;
+  role: 'admin' | 'user';
   employeeType: 'normal' | 'manager' | 'admin';
   avatar?: string;
   department?: string;
@@ -27,8 +28,8 @@ export interface Employee {
 export interface Salary {
   id?: string;
   userId: string;
-  month: string;
-  year: string;
+  month: number; // 1-12 arası integer
+  year: number;
   grossSalary: number;
   netSalary: number;
   bonus: number;
@@ -66,6 +67,8 @@ export interface Leave {
   status: 'pending' | 'approved' | 'rejected';
   reason?: string;
   type: 'annual' | 'sick' | 'personal' | 'other'; // ERD'ye göre
+  leaveType: 'annual' | 'unpaid' | 'sick' | 'maternity' | 'bereavement' | 'administrative' | 'personal' | 'other';
+  daysUsed: number;
   created_at?: string;
   updated_at?: string;
 }

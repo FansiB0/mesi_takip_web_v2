@@ -140,7 +140,7 @@ const OvertimeTracking: React.FC = () => {
               </select>
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Saatlik Ücret</label>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Saatlik Ücret (Opsiyonel)</label>
               <input
                 type="number"
                 step="0.01"
@@ -149,6 +149,7 @@ const OvertimeTracking: React.FC = () => {
                 className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
                 placeholder={settings.salary.defaultHourlyRate || "133.33"}
               />
+              <p className="text-xs text-gray-500 mt-1">Boş bırakırsanız varsayılan değer kullanılır</p>
             </div>
             <div className="md:col-span-4 flex justify-end space-x-3">
               <button
@@ -224,10 +225,10 @@ const OvertimeTracking: React.FC = () => {
                       </span>
                     </td>
                     <td className="py-3 px-4 text-gray-700 dark:text-gray-300">
-                      {overtime.hourlyRate.toLocaleString('tr-TR')} ₺/saat
+                      {(overtime.hourlyRate || 0).toLocaleString('tr-TR')} ₺/saat
                     </td>
                     <td className="py-3 px-4 font-semibold text-green-600 dark:text-green-400">
-                      {overtime.totalPayment.toLocaleString('tr-TR')} ₺
+                      {(overtime.totalPayment || 0).toLocaleString('tr-TR')} ₺
                     </td>
                     <td className="py-3 px-4">
                       <button

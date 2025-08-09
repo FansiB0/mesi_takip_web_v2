@@ -3,7 +3,7 @@
   "private": true,
   "version": "2.0.0",
   "type": "module",
-  "homepage": "https://abdulkadir06akcan.github.io/mesi_takip_web_v2",
+  "homepage": "https://fansib0.github.io/mesi_takip_web_v2",
   "scripts": {
     "dev": "vite",
     "build": "vite build",
@@ -11,7 +11,8 @@
     "preview": "vite preview",
     "predeploy": "npm run build",
     "deploy": "gh-pages -d dist",
-    "deploy:netlify": "npm run build && netlify deploy --prod --dir=dist"
+    "deploy:netlify": "npm run build && netlify deploy --prod --dir=dist",
+    "deploy:vercel": "vercel --prod"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.53.0",

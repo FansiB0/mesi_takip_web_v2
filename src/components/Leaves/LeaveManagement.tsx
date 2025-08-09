@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Plus, Calendar, CheckCircle, XCircle, Clock, Trash2, Edit, Loader2 } from 'lucide-react';
+import { Plus, Calendar, CheckCircle, XCircle, Clock, Trash2, Loader2 } from 'lucide-react';
 import { useData } from '../../contexts/DataContext';
 import { useAuth } from '../../contexts/AuthContext';
 import { formatDate } from '../../utils/calculations';
@@ -12,12 +12,12 @@ const LeaveManagement: React.FC = () => {
   const { settings } = useSettings();
   const { showSuccess, showError } = useToast();
   const [showAddForm, setShowAddForm] = useState(false);
-  const [editingId, setEditingId] = useState<string | null>(null);
+
   const [formData, setFormData] = useState({
     startDate: '',
     endDate: '',
     reason: '',
-    leaveType: 'annual' as 'paid' | 'unpaid' | 'annual' | 'maternity' | 'bereavement' | 'administrative'
+    leaveType: 'annual' as 'annual' | 'unpaid' | 'sick' | 'maternity' | 'bereavement' | 'administrative' | 'personal' | 'other'
   });
 
   // Filter leaves for current user
@@ -260,6 +260,204 @@ const LeaveManagement: React.FC = () => {
         </div>
       </div>
 
+      {/* İzin Türleri Detaylı İstatistikleri */}
+      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+        <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">İzin Türleri Dağılımı</h3>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          {/* Yıllık İzin */}
+          <div className="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-4">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-sm font-medium text-blue-700 dark:text-blue-300">Yıllık İzin</span>
+              <span className="text-xs bg-blue-100 dark:bg-blue-800 text-blue-700 dark:text-blue-300 px-2 py-1 rounded">
+                Ücretli
+              </span>
+            </div>
+            <p className="text-2xl font-bold text-blue-900 dark:text-blue-100">
+              {userLeaves.filter(leave => leave.leaveType === 'annual').reduce((sum, leave) => sum + leave.daysUsed, 0)} gün
+            </p>
+          </div>
+
+          {/* Ücretsiz İzin */}
+          <div className="bg-red-50 dark:bg-red-900/20 rounded-lg p-4">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-sm font-medium text-red-700 dark:text-red-300">Ücretsiz İzin</span>
+              <span className="text-xs bg-red-100 dark:bg-red-800 text-red-700 dark:text-red-300 px-2 py-1 rounded">
+                Kesintili
+              </span>
+            </div>
+            <p className="text-2xl font-bold text-red-900 dark:text-red-100">
+              {userLeaves.filter(leave => leave.leaveType === 'unpaid').reduce((sum, leave) => sum + leave.daysUsed, 0)} gün
+            </p>
+          </div>
+
+          {/* Hastalık İzni */}
+          <div className="bg-yellow-50 dark:bg-yellow-900/20 rounded-lg p-4">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-sm font-medium text-yellow-700 dark:text-yellow-300">Hastalık İzni</span>
+              <span className="text-xs bg-yellow-100 dark:bg-yellow-800 text-yellow-700 dark:text-yellow-300 px-2 py-1 rounded">
+                Raporlu
+              </span>
+            </div>
+            <p className="text-2xl font-bold text-yellow-900 dark:text-yellow-100">
+              {userLeaves.filter(leave => leave.leaveType === 'sick').reduce((sum, leave) => sum + leave.daysUsed, 0)} gün
+            </p>
+          </div>
+
+          {/* Diğer İzinler */}
+          <div className="bg-purple-50 dark:bg-purple-900/20 rounded-lg p-4">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-sm font-medium text-purple-700 dark:text-purple-300">Diğer İzinler</span>
+              <span className="text-xs bg-purple-100 dark:bg-purple-800 text-purple-700 dark:text-purple-300 px-2 py-1 rounded">
+                Karma
+              </span>
+            </div>
+            <p className="text-2xl font-bold text-purple-900 dark:text-purple-100">
+              {userLeaves.filter(leave => !['annual', 'unpaid', 'sick'].includes(leave.leaveType || '')).reduce((sum, leave) => sum + leave.daysUsed, 0)} gün
+            </p>
+          </div>
+        </div>
+
+        {/* İzin Kullanım Oranı */}
+        <div className="mt-6 pt-6 border-t border-gray-200 dark:border-gray-700">
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-sm font-medium text-gray-600 dark:text-gray-400">Yıllık İzin Kullanım Oranı</span>
+            <span className="text-sm font-semibold text-gray-900 dark:text-white">
+              {annualLeaveEntitlement > 0 ? Math.round((totalUsedDays / annualLeaveEntitlement) * 100) : 0}%
+            </span>
+          </div>
+          <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
+            <div 
+              className="bg-blue-600 h-2 rounded-full transition-all duration-300" 
+              style={{ 
+                width: `${annualLeaveEntitlement > 0 ? Math.min((totalUsedDays / annualLeaveEntitlement) * 100, 100) : 0}%` 
+              }}
+            ></div>
+          </div>
+          <div className="flex justify-between mt-2 text-xs text-gray-500 dark:text-gray-400">
+            <span>0 gün</span>
+            <span>{annualLeaveEntitlement} gün</span>
+          </div>
+        </div>
+      </div>
+
+      {/* Aylık İzin Kullanım Grafiği */}
+      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+        <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Aylık İzin Kullanımı</h3>
+        <div className="grid grid-cols-12 gap-2">
+          {Array.from({ length: 12 }, (_, index) => {
+            const month = index + 1;
+            const monthName = ['Oca', 'Şub', 'Mar', 'Nis', 'May', 'Haz', 'Tem', 'Ağu', 'Eyl', 'Eki', 'Kas', 'Ara'][index];
+            const currentYear = new Date().getFullYear();
+            
+            // Bu ay kullanılan izin günleri
+            const monthlyLeaves = userLeaves.filter(leave => {
+              const startDate = new Date(leave.startDate);
+              return startDate.getFullYear() === currentYear && startDate.getMonth() + 1 === month;
+            });
+            
+            const monthlyDays = monthlyLeaves.reduce((sum, leave) => sum + leave.daysUsed, 0);
+            const maxDays = Math.max(...userLeaves.map(leave => leave.daysUsed), 5); // En az 5 gün referans
+            const barHeight = monthlyDays > 0 ? Math.max((monthlyDays / maxDays) * 100, 10) : 0;
+            
+            return (
+              <div key={month} className="flex flex-col items-center">
+                <div className="h-20 w-8 bg-gray-200 dark:bg-gray-700 rounded-t flex items-end justify-center relative">
+                  {monthlyDays > 0 && (
+                    <div 
+                      className="bg-blue-500 w-6 rounded-t transition-all duration-300 flex items-end justify-center"
+                      style={{ height: `${barHeight}%` }}
+                    >
+                      <span className="text-xs text-white font-medium mb-1">{monthlyDays}</span>
+                    </div>
+                  )}
+                </div>
+                <span className="text-xs text-gray-600 dark:text-gray-400 mt-1">{monthName}</span>
+              </div>
+            );
+          })}
+        </div>
+        
+        {/* Grafik Açıklaması */}
+        <div className="flex items-center justify-center mt-4 text-sm text-gray-600 dark:text-gray-400">
+          <div className="flex items-center space-x-4">
+            <div className="flex items-center">
+              <div className="w-3 h-3 bg-blue-500 rounded mr-2"></div>
+              <span>Kullanılan İzin Günleri</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Hızlı İzin Aksiyonları */}
+      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+        <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Hızlı İşlemler</h3>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          {/* Yarım Gün İzin */}
+          <button 
+            onClick={() => {
+              const today = new Date().toISOString().split('T')[0];
+              setFormData({
+                startDate: today,
+                endDate: today,
+                reason: 'Yarım gün izin',
+                leaveType: 'unpaid'
+              });
+              setShowAddForm(true);
+            }}
+            className="flex items-center justify-center p-4 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg hover:border-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors"
+          >
+            <div className="text-center">
+              <Clock className="h-8 w-8 text-blue-600 mx-auto mb-2" />
+              <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Yarım Gün İzin</span>
+              <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Bugün için hızlı talep</p>
+            </div>
+          </button>
+
+          {/* Mazeret İzni */}
+          <button 
+            onClick={() => {
+              const today = new Date().toISOString().split('T')[0];
+              setFormData({
+                startDate: today,
+                endDate: today,
+                reason: 'Mazeret izni',
+                leaveType: 'unpaid'
+              });
+              setShowAddForm(true);
+            }}
+            className="flex items-center justify-center p-4 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg hover:border-yellow-500 hover:bg-yellow-50 dark:hover:bg-yellow-900/20 transition-colors"
+          >
+            <div className="text-center">
+              <XCircle className="h-8 w-8 text-yellow-600 mx-auto mb-2" />
+              <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Mazeret İzni</span>
+              <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Acil durumlar için</p>
+            </div>
+          </button>
+
+          {/* Hafta Sonu Uzatma */}
+          <button 
+            onClick={() => {
+              const nextMonday = new Date();
+              nextMonday.setDate(nextMonday.getDate() + (1 + 7 - nextMonday.getDay()) % 7);
+              setFormData({
+                startDate: nextMonday.toISOString().split('T')[0],
+                endDate: nextMonday.toISOString().split('T')[0],
+                reason: 'Hafta sonu uzatma',
+                leaveType: 'annual'
+              });
+              setShowAddForm(true);
+            }}
+            className="flex items-center justify-center p-4 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg hover:border-green-500 hover:bg-green-50 dark:hover:bg-green-900/20 transition-colors"
+          >
+            <div className="text-center">
+              <Calendar className="h-8 w-8 text-green-600 mx-auto mb-2" />
+              <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Pazartesi İzni</span>
+              <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Hafta sonu uzatma</p>
+            </div>
+          </button>
+        </div>
+      </div>
+
       {/* Yıllık İzin Uyarısı */}
       {annualLeaveEntitlement === 0 && (
         <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-4">
@@ -399,7 +597,7 @@ const LeaveManagement: React.FC = () => {
                     {getStatusText(leave.status)}
                   </span>
                   <button
-                    onClick={() => handleDeleteLeave(leave.id)}
+                    onClick={() => leave.id && handleDeleteLeave(leave.id)}
                     className="text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300"
                   >
                     <Trash2 className="h-4 w-4" />

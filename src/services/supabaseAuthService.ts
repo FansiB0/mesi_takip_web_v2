@@ -1,11 +1,12 @@
 import { supabase } from '../config/supabase'
-import type { User } from '../types'
 
 export interface SupabaseUser {
   id: string
   email: string
   name: string
   role: 'admin' | 'user'
+  startDate?: string
+  employeeType?: 'normal' | 'manager' | 'admin'
   created_at: string
   updated_at: string
 }
@@ -200,6 +201,8 @@ export const loginUser = async (email: string, password: string): Promise<Supaba
           email: data.user.email || '',
           name: (data.user.user_metadata?.name as string) || 'Unknown User',
           role: (data.user.user_metadata?.role as 'admin' | 'user') || 'user',
+          startDate: undefined,
+          employeeType: 'normal',
           created_at: data.user.created_at || new Date().toISOString(),
           updated_at: data.user.updated_at || new Date().toISOString()
         };
@@ -211,7 +214,20 @@ export const loginUser = async (email: string, password: string): Promise<Supaba
     if (import.meta.env.DEV) {
       console.log('✅ User data fetched:', userData);
     }
-    return userData
+    
+    // Supabase snake_case'i camelCase'e çevir
+    const mappedUserData: SupabaseUser = {
+      id: userData.id,
+      email: userData.email,
+      name: userData.name,
+      role: userData.role || 'user',
+      startDate: userData.start_date,
+      employeeType: userData.employee_type || 'normal',
+      created_at: userData.created_at,
+      updated_at: userData.updated_at
+    };
+    
+    return mappedUserData
   } catch (error) {
     if (import.meta.env.DEV) {
       console.error('Supabase login error:', error)
@@ -258,6 +274,8 @@ export const getCurrentUser = async (): Promise<SupabaseUser | null> => {
           email: user.email || '',
           name: (user.user_metadata?.name as string) || 'Unknown User',
           role: (user.user_metadata?.role as 'admin' | 'user') || 'user',
+          startDate: undefined,
+          employeeType: 'normal',
           created_at: user.created_at || new Date().toISOString(),
           updated_at: user.updated_at || new Date().toISOString()
         };
@@ -266,7 +284,19 @@ export const getCurrentUser = async (): Promise<SupabaseUser | null> => {
       throw error;
     }
 
-    return userData
+    // Supabase snake_case'i camelCase'e çevir
+    const mappedUserData: SupabaseUser = {
+      id: userData.id,
+      email: userData.email,
+      name: userData.name,
+      role: userData.role || 'user',
+      startDate: userData.start_date,
+      employeeType: userData.employee_type || 'normal',
+      created_at: userData.created_at,
+      updated_at: userData.updated_at
+    };
+    
+    return mappedUserData
   } catch (error) {
     if (import.meta.env.DEV) {
       console.error('Supabase getCurrentUser error:', error)

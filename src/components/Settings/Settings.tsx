@@ -1,26 +1,22 @@
-import React, { useState, useCallback, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   User, 
   Bell, 
   DollarSign, 
   Palette, 
-  Save, 
-  Shield,
-  Users,
-  Database,
-  Activity
+  Save
 } from 'lucide-react';
 import { useSettings } from '../../contexts/SettingsContext';
 import { useAuth } from '../../contexts/AuthContext';
 import { useToast } from '../../contexts/ToastContext';
-import AdminPanel from '../Admin/AdminPanel';
+
 
 const Settings: React.FC = () => {
   const { settings, updateSettings } = useSettings();
   const { user } = useAuth();
   const { showSuccess, showError } = useToast();
   const [activeTab, setActiveTab] = useState<'profile' | 'notifications' | 'salary' | 'appearance'>('profile');
-  const [showAdminPanel, setShowAdminPanel] = useState(false);
+
   const [localSettings, setLocalSettings] = useState(settings);
 
   // localSettings'i settings ile senkronize et
@@ -67,7 +63,7 @@ const Settings: React.FC = () => {
     }
   };
 
-  const isAdmin = user?.employeeType === 'admin';
+
 
   return (
     <div className="space-y-6">
@@ -78,16 +74,7 @@ const Settings: React.FC = () => {
           <p className="text-gray-600 dark:text-gray-400">Hesap ve uygulama ayarlarınızı yönetin</p>
         </div>
         
-        {/* Admin Panel Button */}
-        {isAdmin && (
-          <button
-            onClick={() => setShowAdminPanel(true)}
-            className="flex items-center space-x-2 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
-          >
-            <Shield className="h-5 w-5" />
-            <span>Admin Paneli</span>
-          </button>
-        )}
+
       </div>
 
       {/* Navigation */}
@@ -617,6 +604,56 @@ const Settings: React.FC = () => {
                 </div>
             </div>
 
+            {/* Toggle Switches */}
+            <div className="space-y-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="font-medium text-gray-900 dark:text-white">Kompakt Mod</h3>
+                  <p className="text-sm text-gray-600 dark:text-gray-400">Daha az boşluk ile kompakt görünüm</p>
+                </div>
+                <label className="relative inline-flex items-center cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={localSettings.appearance.compactMode}
+                    onChange={(e) => handleInputChange('appearance', 'compactMode', e.target.checked)}
+                    className="sr-only peer"
+                  />
+                  <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-blue-600"></div>
+                </label>
+              </div>
+
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="font-medium text-gray-900 dark:text-white">Animasyonları Göster</h3>
+                  <p className="text-sm text-gray-600 dark:text-gray-400">Geçiş animasyonları ve efektleri</p>
+                </div>
+                <label className="relative inline-flex items-center cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={localSettings.appearance.showAnimations}
+                    onChange={(e) => handleInputChange('appearance', 'showAnimations', e.target.checked)}
+                    className="sr-only peer"
+                  />
+                  <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-blue-600"></div>
+                </label>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Dashboard Düzeni
+                </label>
+                <select
+                  value={localSettings.appearance.dashboardLayout}
+                  onChange={(e) => handleInputChange('appearance', 'dashboardLayout', e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
+                >
+                  <option value="grid">Izgara</option>
+                  <option value="list">Liste</option>
+                  <option value="compact">Kompakt</option>
+                </select>
+              </div>
+            </div>
+
             {/* Kaydet Butonu */}
             <div className="flex justify-end pt-6 border-t border-gray-200 dark:border-gray-700">
               <button
@@ -631,10 +668,7 @@ const Settings: React.FC = () => {
         )}
         </div>
 
-      {/* Admin Panel Modal */}
-      {showAdminPanel && (
-        <AdminPanel onClose={() => setShowAdminPanel(false)} />
-      )}
+
     </div>
   );
 };

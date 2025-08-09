@@ -1,11 +1,15 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { LogOut, User, Bell } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useSidebar } from '../../contexts/SidebarContext';
+import { useNotifications } from '../../contexts/NotificationContext';
+import NotificationDropdown from './NotificationDropdown';
 
 const Header: React.FC = () => {
   const { user, logout } = useAuth();
   const { isCollapsed } = useSidebar();
+  const { unreadCount } = useNotifications();
+  const [showNotifications, setShowNotifications] = useState(false);
 
   return (
     <header className="bg-white dark:bg-gray-900 shadow-sm border-b border-gray-200 dark:border-gray-700 fixed top-0 left-0 right-0 z-30">
@@ -23,9 +27,23 @@ const Header: React.FC = () => {
 
         {/* Sağ Taraf - Kullanıcı Bilgileri */}
         <div className="flex items-center space-x-4">
-          <button className="p-2 text-gray-400 hover:text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full transition-colors">
-            <Bell className="h-5 w-5" />
-          </button>
+          <div className="relative">
+            <button 
+              onClick={() => setShowNotifications(!showNotifications)}
+              className="relative p-2 text-gray-400 hover:text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full transition-colors"
+            >
+              <Bell className="h-5 w-5" />
+              {unreadCount > 0 && (
+                <span className="absolute -top-1 -right-1 h-5 w-5 bg-red-500 text-white text-xs rounded-full flex items-center justify-center">
+                  {unreadCount > 9 ? '9+' : unreadCount}
+                </span>
+              )}
+            </button>
+            
+            {showNotifications && (
+              <NotificationDropdown onClose={() => setShowNotifications(false)} />
+            )}
+          </div>
           
           <div className="flex items-center space-x-3">
             <div className="flex items-center space-x-2">

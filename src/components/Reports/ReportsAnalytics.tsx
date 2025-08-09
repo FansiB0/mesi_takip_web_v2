@@ -78,13 +78,26 @@ const ReportsAnalytics: React.FC = () => {
       'Temmuz', 'Ağustos', 'Eylül', 'Ekim', 'Kasım', 'Aralık'
     ];
     
-    return monthNames.map(month => {
-      const monthSalaries = userSalaries.filter(s => s.month === month && s.year.toString() === selectedYear);
+    return monthNames.map((month, index) => {
+      // month number (1-12) ile karşılaştır, array index 0-based olduğu için +1 ekle
+      const monthNumber = index + 1;
+      const monthSalaries = userSalaries.filter(s => s.month === monthNumber && s.year.toString() === selectedYear);
       const monthOvertimes = userOvertimes.filter(o => {
         const overtimeDate = new Date(o.date);
-        return overtimeDate.getMonth() === monthNames.indexOf(month) && 
+        return overtimeDate.getMonth() === index && 
                overtimeDate.getFullYear().toString() === selectedYear;
       });
+      
+      // Debug için console log
+      if (month === 'Temmuz') {
+        console.log('🔍 Temmuz maaş debug:', {
+          month,
+          monthNumber,
+          selectedYear,
+          monthSalaries,
+          allUserSalaries: userSalaries.map(s => ({ month: s.month, year: s.year, netSalary: s.netSalary }))
+        });
+      }
       
       const totalSalary = monthSalaries.reduce((sum, s) => sum + s.netSalary, 0);
       const totalOvertime = monthOvertimes.reduce((sum, o) => sum + o.totalPayment, 0);

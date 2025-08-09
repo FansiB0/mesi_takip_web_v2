@@ -1,9 +1,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { User } from '../types';
-import { loginUser, registerUser, logoutUser, onAuthStateChange, getCurrentUser } from '../services/supabaseAuthService';
+import { loginUser, registerUser, logoutUser, getCurrentUser } from '../services/supabaseAuthService';
 import { userProfileService } from '../services/userProfileService';
-import { settingsService } from '../services/settingsService';
-import type { SupabaseUser } from '../services/supabaseAuthService';
 
 interface AuthContextType {
   user: User | null;
@@ -46,8 +44,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             id: currentUser.id,
             name: currentUser.name,
             email: currentUser.email,
-            startDate: new Date().toISOString().split('T')[0], // Varsayılan tarih
-            employeeType: 'normal'
+            startDate: currentUser.startDate || new Date().toISOString().split('T')[0],
+            role: currentUser.role || 'user',
+            employeeType: currentUser.employeeType || 'normal'
           };
           setUser(userData);
           localStorage.setItem('currentUser', currentUser.id);
@@ -97,8 +96,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         id: user.id,
         name: user.name,
         email: user.email,
-        startDate: new Date().toISOString().split('T')[0], // Varsayılan tarih
-        employeeType: 'normal'
+        startDate: user.startDate || new Date().toISOString().split('T')[0],
+        role: user.role || 'user',
+        employeeType: user.employeeType || 'normal'
       };
       setUser(userData);
       localStorage.setItem('currentUser', user.id);
@@ -136,7 +136,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         name: result.user.name,
         email: result.user.email,
         startDate,
-        employeeType: 'normal'
+        role: result.user.role || 'user',
+        employeeType: result.user.employeeType || 'normal'
       };
       setUser(userData);
       localStorage.setItem('currentUser', result.user.id);
@@ -178,8 +179,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         id: currentUser.id,
         name: currentUser.name,
         email: currentUser.email,
-        startDate: new Date().toISOString().split('T')[0], // Varsayılan tarih
-        employeeType: 'normal'
+        startDate: currentUser.startDate || new Date().toISOString().split('T')[0],
+        role: currentUser.role || 'user',
+        employeeType: currentUser.employeeType || 'normal'
       };
       setUser(userData);
       if (import.meta.env.DEV) {
