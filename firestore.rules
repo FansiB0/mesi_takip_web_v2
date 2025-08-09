@@ -1,0 +1,53 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Kullanıcı profilleri - geçici olarak tüm kullanıcılar erişebilir
+    match /userProfiles/{userId} {
+      allow read, write: if request.auth != null;
+    }
+    
+    // Kullanıcı ayarları - sadece kendi ayarlarını okuyabilir/yazabilir
+    match /userSettings/{userId} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+    }
+    
+    // Kullanıcılar koleksiyonu - tüm kullanıcılar okuyabilir/yazabilir (geçici olarak)
+    match /users/{userId} {
+      allow read, write: if request.auth != null;
+    }
+    
+    // Sistem logları - geçici olarak tüm kullanıcılar erişebilir
+    match /systemLogs/{document} {
+      allow read, write: if request.auth != null;
+    }
+    
+    // Tatil verileri - herkes okuyabilir, sadece admin yazabilir
+    match /holidays/{document} {
+      allow read, write: if request.auth != null;
+    }
+    
+    // Mesai verileri - sadece kendi verilerini okuyabilir/yazabilir
+    match /overtimes/{document} {
+      allow read, write: if request.auth != null && 
+        (resource == null || request.auth.uid == resource.data.userId);
+    }
+    
+    // İzin verileri - sadece kendi verilerini okuyabilir/yazabilir
+    match /leaves/{document} {
+      allow read, write: if request.auth != null && 
+        (resource == null || request.auth.uid == resource.data.userId);
+    }
+    
+    // Maaş verileri - sadece kendi verilerini okuyabilir/yazabilir
+    match /salaries/{document} {
+      allow read, write: if request.auth != null && 
+        (resource == null || request.auth.uid == resource.data.userId);
+    }
+    
+    // Çalışan verileri - sadece kendi verilerini okuyabilir/yazabilir
+    match /employees/{document} {
+      allow read, write: if request.auth != null && 
+        (resource == null || request.auth.uid == resource.data.userId);
+    }
+  }
+} 
