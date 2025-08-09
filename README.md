@@ -1,15 +1,22 @@
-# Mesai Takip Web V2
+# 💼 Mesai Takip Web V2
 
-Modern, güvenli ve kullanıcı dostu bir maaş ve çalışma takip uygulaması. React, TypeScript, Tailwind CSS ve Firebase kullanılarak geliştirilmiştir.
+Modern, güvenli ve kullanıcı dostu bir maaş ve çalışma takip uygulaması. React, TypeScript, Tailwind CSS ve Supabase kullanılarak geliştirilmiştir.
 
+## 🌐 Proje Bilgileri
+- **📁 Workspace:** mesi_takip_web_V1-master
+- **🛠️ Geliştirme Ortamı:** React + TypeScript + Vite
+- **🗄️ Veritabanı:** Supabase (PostgreSQL)
+- **🎨 Stil:** Tailwind CSS
 
-## 🆕 V2.0 Yeni Özellikler
-- ✅ **Admin Paneli**: Kullanıcı yönetimi ve sistem logları
-- ✅ **Gelişmiş Hata Yönetimi**: Kapsamlı hata yakalama sistemi
-- ✅ **Form Validasyonu**: Real-time form doğrulama
-- ✅ **Performans Optimizasyonu**: React.memo ve useMemo kullanımı
-- ✅ **Güvenlik İyileştirmeleri**: XSS koruması ve input sanitization
-- ✅ **UX/UI İyileştirmeleri**: Loading states, empty states, responsive design
+## 🆕 Mevcut Özellikler
+- ✅ **Admin Paneli**: Kullanıcı yönetimi, rol kontrolü ve sistem logları
+- ✅ **Supabase Backend**: PostgreSQL veritabanı ve gerçek zamanlı güncellemeler
+- ✅ **Gelişmiş Raporlama**: Aylık gelir trendi ve detaylı analizler
+- ✅ **Dark Mode**: Kapsamlı karanlık tema desteği
+- ✅ **Bildirim Sistemi**: Gerçek zamanlı bildirimler ve sayaç
+- ✅ **Görünüm Ayarları**: Font boyutu, renk şeması, kompakt mod
+- ✅ **Tazminat Hesaplayıcıları**: Kıdem tazminatı ve işsizlik maaşı hesaplama
+- ✅ **İzin Analizi**: Detaylı izin istatistikleri ve kullanım grafiği
 
 ## 🚀 Özellikler
 
@@ -48,36 +55,41 @@ Modern, güvenli ve kullanıcı dostu bir maaş ve çalışma takip uygulaması.
 ## 🛠️ Teknolojiler
 
 ### Frontend
-- **React 18**: Modern React özellikleri
-- **TypeScript**: Tip güvenliği
-- **Tailwind CSS**: Utility-first CSS framework
-- **Lucide React**: Modern ikonlar
-- **Vite**: Hızlı build tool
+- **React 18.3.1**: Modern React özellikleri ve hooks
+- **TypeScript 5.5+**: Tip güvenliği ve geliştirici deneyimi
+- **Tailwind CSS 3.4+**: Utility-first CSS framework
+- **Lucide React**: Modern SVG ikon seti
+- **React Icons**: Geniş ikon kütüphanesi
+- **React Router DOM**: Client-side routing
+- **Vite 5.4+**: Hızlı build tool ve dev server
 
 ### Backend & Veritabanı
-- **Firebase**: Backend as a Service
-- **Firestore**: NoSQL veritabanı
-- **Firebase Auth**: Kimlik doğrulama
-- **Firebase Hosting**: Web hosting
+- **Supabase 2.53+**: Backend as a Service
+- **PostgreSQL**: İlişkisel veritabanı
+- **Supabase Auth**: Kimlik doğrulama sistemi
+- **Row Level Security (RLS)**: Veri güvenliği
+- **Real-time Subscriptions**: Gerçek zamanlı güncellemeler
 
 ### Geliştirme Araçları
-- **ESLint**: Kod kalitesi
-- **Prettier**: Kod formatı
-- **TypeScript**: Tip kontrolü
+- **ESLint 9.9+**: Kod kalitesi ve linting
+- **TypeScript ESLint**: TypeScript için ESLint kuralları
+- **PostCSS**: CSS işleme
+- **Autoprefixer**: CSS vendor prefix'leri
+- **Netlify**: Deployment yapılandırması
 
 ## 📦 Kurulum
 
 ### Gereksinimler
 - Node.js 18+ 
 - npm veya yarn
-- Firebase hesabı
+- Supabase hesabı
 
 ### Adımlar
 
 1. **Projeyi klonlayın**
 ```bash
-git clone https://github.com/your-username/mesi_takip_web_V1.git
-cd mesi_takip_web_V1
+git clone https://github.com/FansiB0/mesi_takip_web_v2.git
+cd mesi_takip_web_v2
 ```
 
 2. **Bağımlılıkları yükleyin**
@@ -85,10 +97,14 @@ cd mesi_takip_web_V1
 npm install
 ```
 
-3. **Firebase yapılandırması**
+3. **Environment variables ayarlayın**
 ```bash
-# Firebase projenizi oluşturun ve config bilgilerini alın
-# src/config/firebase.ts dosyasını güncelleyin
+# env.example dosyasını .env olarak kopyalayın
+cp env.example .env
+
+# .env dosyasında Supabase bilgilerinizi güncelleyin
+# VITE_SUPABASE_URL=your_supabase_url
+# VITE_SUPABASE_ANON_KEY=your_supabase_anon_key
 ```
 
 4. **Geliştirme sunucusunu başlatın**
@@ -103,21 +119,50 @@ npm run build
 
 ## 🔧 Yapılandırma
 
-### Firebase Kurulumu
-1. [Firebase Console](https://console.firebase.google.com/)'da yeni proje oluşturun
-2. Authentication'ı etkinleştirin (Email/Password)
-3. Firestore Database'i oluşturun
-4. Proje ayarlarından config bilgilerini alın
-5. `src/config/firebase.ts` dosyasını güncelleyin
+### Supabase Kurulumu
+1. [Supabase Console](https://app.supabase.com/)'da yeni proje oluşturun
+2. Database'de gerekli tabloları oluşturun (SQL script'ler repo'da mevcut)
+3. Authentication'ı etkinleştirin (Email/Password)
+4. Row Level Security (RLS) politikalarını ayarlayın
+5. API Keys'i alın ve environment variables'a ekleyin
 
 ### Environment Variables
 ```env
-VITE_FIREBASE_API_KEY=your_api_key
-VITE_FIREBASE_AUTH_DOMAIN=your_auth_domain
-VITE_FIREBASE_PROJECT_ID=your_project_id
-VITE_FIREBASE_STORAGE_BUCKET=your_storage_bucket
-VITE_FIREBASE_MESSAGING_SENDER_ID=your_sender_id
-VITE_FIREBASE_APP_ID=your_app_id
+VITE_SUPABASE_URL=your_supabase_url
+VITE_SUPABASE_ANON_KEY=your_supabase_anon_key
+```
+
+### Database Setup
+Repo'da bulunan SQL script'lerini Supabase SQL Editor'de sırasıyla çalıştırın:
+
+1. **Temel Schema Kurulumu:**
+```sql
+-- Ana schema ve tabloları oluştur
+COMPLETE_SCHEMA_FIX.sql
+
+-- UUID düzeltmeleri
+COMPLETE_UUID_FIX_ALL_TABLES.sql
+
+-- Maaş tablosu düzeltmeleri
+FINAL_SALARY_FIX.sql
+```
+
+2. **Admin ve Güvenlik:**
+```sql
+-- Admin kullanıcı oluştur
+CREATE_ADMIN_USER.sql
+
+-- Güvenlik ayarları
+ENABLE_SECURITY.sql
+
+-- Sistem logları
+CREATE_SYSTEM_LOGS.sql
+```
+
+3. **İsteğe Bağlı (Test/Debug):**
+```sql
+-- Tabloları sıfırlamak için (dikkatli kullanın!)
+VERIFIED_RESET_TABLES.sql
 ```
 
 ## 📁 Proje Yapısı
@@ -145,7 +190,7 @@ src/
 └── config/             # Yapılandırma dosyaları
 ```
 
-## 🔄 Yeni Özellikler (v2.0)
+## 🔄 Teknik Özellikler
 
 ### Hata Yönetimi
 - ✅ Kapsamlı hata yakalama sistemi
@@ -180,16 +225,22 @@ src/
 
 ## 🚀 Deployment
 
-### Firebase Hosting
-```bash
-npm run build
-firebase deploy
-```
-
 ### Vercel
 ```bash
 npm run build
 vercel --prod
+```
+
+### Netlify
+```bash
+npm run build
+# netlify.toml dosyası mevcut - drag & drop ile deploy edilebilir
+```
+
+### Manual Deployment
+```bash
+npm run build
+# dist/ klasöründeki dosyaları statik hosting servisine yükleyin
 ```
 
 ## 🤝 Katkıda Bulunma
@@ -207,18 +258,32 @@ Bu proje MIT lisansı altında lisanslanmıştır. Detaylar için `LICENSE` dosy
 ## 🆘 Destek
 
 Herhangi bir sorun yaşarsanız:
-1. [Issues](https://github.com/your-username/mesi_takip_web_V1/issues) sayfasını kontrol edin
-2. Yeni issue oluşturun
-3. Email ile iletişime geçin: support@example.com
+1. Hata loglarını kontrol edin
+2. Veritabanı bağlantısını doğrulayın
+3. Environment variables'ları kontrol edin
+4. Geliştirici ile iletişime geçin
 
 ## 🔮 Gelecek Planları
 
-- [ ] PWA desteği
-- [ ] Mobile app
-- [ ] Advanced analytics
-- [ ] Multi-language support
-- [ ] Advanced reporting
-- [ ] Integration APIs
+### Kısa Vadeli (v1.1)
+- [ ] Offline çalışma desteği (PWA)
+- [ ] Excel export/import özelliği
+- [ ] Gelişmiş filtreleme ve arama
+- [ ] Email bildirimleri
+- [ ] Vardiya sistemi desteği
+
+### Orta Vadeli (v1.2-1.3)
+- [ ] Mobile responsive iyileştirmeleri
+- [ ] Raporlama dashboard'u
+- [ ] Çoklu dil desteği (EN/TR)
+- [ ] API entegrasyonları
+- [ ] Kullanıcı rol yönetimi genişletmesi
+
+### Uzun Vadeli (v2.0+)
+- [ ] Mobile app (React Native)
+- [ ] AI destekli analitik
+- [ ] Third-party integrations (Slack, Teams)
+- [ ] Multi-tenant architecture
 
 ---
 
