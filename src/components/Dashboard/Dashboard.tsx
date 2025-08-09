@@ -7,7 +7,7 @@ import LoadingSpinner from '../LoadingSpinner';
 import ErrorDisplay from '../ErrorDisplay';
 import EmptyState from '../EmptyState';
 import NetworkStatus from '../NetworkStatus';
-import DebugPanel from '../DebugPanel';
+
 import { 
   DollarSign, 
   Clock, 
@@ -433,16 +433,16 @@ const Dashboard: React.FC = () => {
                       {salary.month}/{salary.year}
                     </p>
                     <p className="text-sm text-gray-600 dark:text-gray-400">
-                      Brüt: ₺{salary.grossSalary.toLocaleString()}
+                      Brüt: ₺{(salary.grossSalary || 0).toLocaleString()}
                     </p>
                   </div>
                   <div className="text-right">
                     <p className="font-semibold text-green-600">
-                      ₺{salary.netSalary.toLocaleString()}
+                      ₺{(salary.netSalary || 0).toLocaleString()}
                     </p>
-                    {salary.bonus > 0 && (
+                    {(salary.bonus || 0) > 0 && (
                       <p className="text-sm text-blue-600">
-                        +₺{salary.bonus.toLocaleString()} ikramiye
+                        +₺{(salary.bonus || 0).toLocaleString()} ikramiye
                       </p>
                     )}
                   </div>
@@ -489,7 +489,7 @@ const Dashboard: React.FC = () => {
                       {overtime.hours} saat
                     </p>
                     <p className="text-sm text-green-600">
-                      ₺{(overtime.hours * overtime.hourlyRate).toLocaleString()}
+                      ₺{((overtime.hours || 0) * (overtime.hourlyRate || 0)).toLocaleString()}
                     </p>
                   </div>
                 </div>
@@ -591,12 +591,7 @@ const Dashboard: React.FC = () => {
           )}
         </div>
 
-        {/* Debug Panel - Sadece development modunda göster */}
-        {import.meta.env.DEV && (
-          <div className="col-span-full">
-            <DebugPanel />
-          </div>
-        )}
+
       </div>
     </div>
   );

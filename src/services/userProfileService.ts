@@ -228,15 +228,23 @@ export const userProfileService = {
   // Kullanıcı rolünü güncelle
   async updateUserRole(uid: string, role: 'normal' | 'manager' | 'admin'): Promise<boolean> {
     try {
+      console.log('🔄 Updating user role:', { uid, role });
+      
       const { error } = await supabase
         .from('users')
         .update({
           role: role === 'admin' ? 'admin' : 'user',
+          employee_type: role, // Bu satır eklendi!
           updated_at: new Date().toISOString()
         })
         .eq('id', uid);
 
-      if (error) throw error;
+      if (error) {
+        console.error('❌ Supabase role update error:', error);
+        throw error;
+      }
+      
+      console.log('✅ User role updated successfully');
       return true;
     } catch (error: any) {
       console.error('❌ Error updating user role:', error);

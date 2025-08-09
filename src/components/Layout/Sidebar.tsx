@@ -11,9 +11,11 @@ import {
   Menu,
   X,
   ChevronLeft,
-  ChevronRight
+  ChevronRight,
+  Shield
 } from 'lucide-react';
 import { useSidebar } from '../../contexts/SidebarContext';
+import { useAuth } from '../../contexts/AuthContext';
 
 interface SidebarProps {
   activeTab: string;
@@ -22,6 +24,7 @@ interface SidebarProps {
 
 const Sidebar: React.FC<SidebarProps> = ({ activeTab, onTabChange }) => {
   const { isCollapsed, toggleSidebar } = useSidebar();
+  const { user } = useAuth();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [windowWidth, setWindowWidth] = useState(window.innerWidth);
 
@@ -37,7 +40,7 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, onTabChange }) => {
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
-  const menuItems = [
+  const baseMenuItems = [
     { id: 'dashboard', label: 'Anasayfa', icon: Home },
     { id: 'salary', label: 'Maaş Yönetimi', icon: DollarSign },
     { id: 'overtime', label: 'Fazla Mesai', icon: Clock },
@@ -47,6 +50,15 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, onTabChange }) => {
     { id: 'reports', label: 'Raporlar', icon: BarChart3 },
     { id: 'settings', label: 'Ayarlar', icon: Settings }
   ];
+
+  // Admin kullanıcılar için Admin paneli ekle
+  const menuItems = user?.role === 'admin' 
+    ? [
+        ...baseMenuItems.slice(0, -1), // Settings'ten önce
+        { id: 'admin', label: 'Admin Panel', icon: Shield },
+        baseMenuItems[baseMenuItems.length - 1] // Settings'i en sona
+      ]
+    : baseMenuItems;
 
   const closeMobileMenu = () => {
     setIsMobileMenuOpen(false);

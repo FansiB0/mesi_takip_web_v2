@@ -4,6 +4,7 @@ import { DataProvider } from './contexts/DataContext';
 import { ToastProvider } from './contexts/ToastContext';
 import { SidebarProvider, useSidebar } from './contexts/SidebarContext';
 import { SettingsProvider } from './contexts/SettingsContext';
+import { NotificationProvider } from './contexts/NotificationContext';
 import ErrorBoundary from './components/ErrorBoundary';
 import LoginForm from './components/Auth/LoginForm';
 import RegisterForm from './components/Auth/RegisterForm';
@@ -17,6 +18,8 @@ import LeaveManagement from './components/Leaves/LeaveManagement';
 import ReportsAnalytics from './components/Reports/ReportsAnalytics';
 import Settings from './components/Settings/Settings';
 import CompensationCalculators from './components/Calculators/CompensationCalculators';
+import AdminPanel from './components/Admin/AdminPanel';
+import { useTheme } from './hooks/useTheme';
 // Supabase bağlantı testi (sadece development ortamında)
 if (import.meta.env.DEV) {
   console.log('✅ Supabase configuration loaded');
@@ -56,6 +59,7 @@ const MainAppContent: React.FC = () => {
   const { user, isLoading } = useAuth();
   const { isCollapsed } = useSidebar();
   const [activeTab, setActiveTab] = useState('dashboard');
+  const [showAdminPanel, setShowAdminPanel] = useState(false);
 
   // Debug için console log (sadece development'ta)
   if (import.meta.env.DEV) {
@@ -66,8 +70,12 @@ const MainAppContent: React.FC = () => {
   useEffect(() => {
     const handleHashChange = () => {
       const hash = window.location.hash.replace('#', '');
-      if (hash && ['dashboard', 'salary', 'overtime', 'calendar', 'leaves', 'reports', 'settings', 'calculators'].includes(hash)) {
+      if (hash === 'admin') {
+        setShowAdminPanel(true);
+        setActiveTab('dashboard'); // Admin panel açıldığında dashboard tab'ında kal
+      } else if (hash && ['dashboard', 'salary', 'overtime', 'calendar', 'leaves', 'reports', 'settings', 'calculators'].includes(hash)) {
         setActiveTab(hash);
+        setShowAdminPanel(false);
       }
     };
 
@@ -134,7 +142,17 @@ const MainAppContent: React.FC = () => {
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
       <Header />
       <div className="flex pt-16">
-        <Sidebar activeTab={activeTab} onTabChange={setActiveTab} />
+        <Sidebar 
+          activeTab={activeTab} 
+          onTabChange={(tab) => {
+            if (tab === 'admin') {
+              setShowAdminPanel(true);
+            } else {
+              setActiveTab(tab);
+              setShowAdminPanel(false);
+            }
+          }} 
+        />
         <main 
           className={`flex-1 p-6 transition-all duration-300 ease-in-out ${
             isCollapsed ? 'md:ml-16' : 'md:ml-64'
@@ -143,11 +161,18 @@ const MainAppContent: React.FC = () => {
           {renderActiveComponent()}
         </main>
       </div>
+
+      {/* Admin Panel Modal */}
+      {showAdminPanel && user?.role === 'admin' && (
+        <AdminPanel onClose={() => setShowAdminPanel(false)} />
+      )}
     </div>
   );
 };
 
 const MainApp: React.FC = () => {
+  useTheme(); // Tema hook'unu uygula
+  
   return (
     <SidebarProvider>
       <MainAppContent />
@@ -162,7 +187,9 @@ function App() {
         <AuthProvider>
           <DataProvider>
             <SettingsProvider>
-              <MainApp />
+              <NotificationProvider>
+                <MainApp />
+              </NotificationProvider>
             </SettingsProvider>
           </DataProvider>
         </AuthProvider>

@@ -118,6 +118,9 @@ export const overtimeService = {
         employeeId: item.user_id,
         date: item.date,
         hours: item.hours,
+        hourlyRate: item.hourly_rate || 0, // EKLENDI!
+        overtimeType: item.overtime_type || 'normal', // EKLENDI!
+        totalPayment: item.total_payment || 0, // EKLENDI!
         description: item.description,
         status: item.status,
         created_at: item.created_at,
@@ -138,8 +141,11 @@ export const overtimeService = {
           user_id: overtime.userId,
           date: overtime.date,
           hours: overtime.hours,
-          description: overtime.description,
-          status: overtime.status,
+          hourly_rate: overtime.hourlyRate || 0, // EKLENDI!
+          overtime_type: overtime.overtimeType || 'normal', // EKLENDI!
+          total_payment: overtime.totalPayment || 0, // EKLENDI!
+          description: overtime.description || 'Fazla mesai',
+          status: overtime.status || 'approved',
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString()
         })
@@ -212,7 +218,9 @@ export const leaveService = {
         startDate: item.start_date,
         endDate: item.end_date,
         type: item.type,
-        reason: item.reason,
+        leaveType: item.leave_type || item.type || 'annual',
+        daysUsed: item.days_used || 1,
+        reason: item.reason || '',
         status: item.status,
         created_at: item.created_at,
         updated_at: item.updated_at
@@ -233,7 +241,9 @@ export const leaveService = {
           start_date: leave.startDate,
           end_date: leave.endDate,
           type: leave.type,
-          reason: leave.reason,
+          leave_type: leave.leaveType || leave.type || 'annual',
+          days_used: leave.daysUsed || 1,
+          reason: leave.reason || '',
           status: leave.status,
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString()
@@ -322,27 +332,50 @@ export const salaryService = {
   // Maaş ekle
   async add(salary: Omit<Salary, 'id'>): Promise<string | null> {
     try {
+      console.log('🔄 Adding salary:', salary);
+      
+      // User ID kontrolü
+      if (!salary.userId) {
+        console.error('❌ User ID is missing!');
+        throw new Error('Kullanıcı bilgisi eksik - lütfen çıkış yapıp tekrar giriş yapın');
+      }
+      
+      const insertData = {
+        user_id: salary.userId,
+        month: salary.month,
+        year: salary.year,
+        gross_salary: salary.grossSalary || 0,
+        net_salary: salary.netSalary || 0,
+        bonus: salary.bonus || 0,
+        bes_deduction: salary.besDeduction || 0,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      };
+      
+      console.log('📝 Insert data:', insertData);
+      
       const { data, error } = await supabase
         .from('salary_records')
-        .insert({
-          user_id: salary.userId,
-          month: salary.month,
-          year: salary.year,
-          gross_salary: salary.grossSalary,
-          net_salary: salary.netSalary,
-          bonus: salary.bonus,
-          bes_deduction: salary.besDeduction,
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString()
-        })
+        .insert(insertData)
         .select()
         .single();
 
-      if (error) throw error;
+      if (error) {
+        console.error('❌ Salary insert error:', error);
+        console.error('📊 Error details:', {
+          code: error.code,
+          message: error.message,
+          details: error.details,
+          hint: error.hint
+        });
+        throw error;
+      }
+      
+      console.log('✅ Salary added successfully:', data);
       return data?.id || null;
     } catch (error) {
-      console.error('Error adding salary:', error);
-      return null;
+      console.error('💥 Salary add exception:', error);
+      throw error; // Re-throw to get detailed error in DataContext
     }
   },
 

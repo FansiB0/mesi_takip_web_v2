@@ -3,9 +3,16 @@ import { ValidationError, FormValidationResult } from '../types';
 // Genel validasyon fonksiyonları
 export const validators = {
   required: (value: any, fieldName: string): ValidationError | null => {
-    if (!value || (typeof value === 'string' && value.trim() === '')) {
+    // Null, undefined, false, 0 kontrolü
+    if (value === null || value === undefined || value === '') {
       return { field: fieldName, message: `${fieldName} alanı zorunludur` };
     }
+    
+    // String ise trim kontrolü yap
+    if (typeof value === 'string' && value.trim() === '') {
+      return { field: fieldName, message: `${fieldName} alanı zorunludur` };
+    }
+    
     return null;
   },
 
@@ -60,8 +67,8 @@ export const validators = {
   },
 
   dateRange: (startDate: string, endDate: string): ValidationError | null => {
-    if (startDate && endDate && new Date(startDate) >= new Date(endDate)) {
-      return { field: 'dateRange', message: 'Bitiş tarihi başlangıç tarihinden sonra olmalıdır' };
+    if (startDate && endDate && new Date(startDate) > new Date(endDate)) {
+      return { field: 'dateRange', message: 'Bitiş tarihi başlangıç tarihinden önce olamaz' };
     }
     return null;
   },
@@ -164,9 +171,11 @@ export const formValidators = {
                       validators.hours(data.hours, 'Saat');
     if (hoursError) errors.push(hoursError);
 
-    const hourlyRateError = validators.required(data.hourlyRate, 'Saat Ücreti') ||
-                           validators.salary(data.hourlyRate, 'Saat Ücreti');
-    if (hourlyRateError) errors.push(hourlyRateError);
+    // Saat ücreti opsiyonel - sadece varsa validate et
+    if (data.hourlyRate !== undefined && data.hourlyRate !== null) {
+      const hourlyRateError = validators.salary(data.hourlyRate, 'Saat Ücreti');
+      if (hourlyRateError) errors.push(hourlyRateError);
+    }
 
     return {
       isValid: errors.length === 0,
@@ -198,9 +207,11 @@ export const formValidators = {
       if (dateRangeError) errors.push(dateRangeError);
     }
 
-    const daysUsedError = validators.required(data.daysUsed, 'Gün Sayısı') ||
-                         validators.positiveNumber(data.daysUsed, 'Gün Sayısı');
-    if (daysUsedError) errors.push(daysUsedError);
+    // Gün sayısı otomatik hesaplandığı için sadece pozitif kontrolü yap
+    if (data.daysUsed !== undefined && data.daysUsed !== null) {
+      const daysUsedError = validators.positiveNumber(data.daysUsed, 'Gün Sayısı');
+      if (daysUsedError) errors.push(daysUsedError);
+    }
 
     // Reason alanı tamamen opsiyonel - hiçbir validation yok
     // Kullanıcı boş bırakabilir
@@ -228,9 +239,11 @@ export const formValidators = {
     const yearError = validators.required(data.year, 'Yıl');
     if (yearError) errors.push(yearError);
 
-    const grossSalaryError = validators.required(data.grossSalary, 'Brüt Maaş') ||
-                            validators.salary(data.grossSalary, 'Brüt Maaş');
-    if (grossSalaryError) errors.push(grossSalaryError);
+    // Brüt maaş opsiyonel - sadece varsa validate et
+    if (data.grossSalary !== undefined && data.grossSalary !== null) {
+      const grossSalaryError = validators.salary(data.grossSalary, 'Brüt Maaş');
+      if (grossSalaryError) errors.push(grossSalaryError);
+    }
 
     const netSalaryError = validators.required(data.netSalary, 'Net Maaş') ||
                           validators.salary(data.netSalary, 'Net Maaş');
@@ -250,8 +263,11 @@ export const formValidators = {
 };
 
 // Input sanitization
-export const sanitizeInput = (input: string): string => {
-  return input
+export const sanitizeInput = (input: any): string => {
+  // Input'u string'e çevir ve null/undefined kontrolü yap
+  const stringInput = input?.toString() || '';
+  
+  return stringInput
     .trim()
     .replace(/[<>]/g, '') // XSS koruması
     .replace(/\s+/g, ' '); // Fazla boşlukları temizle

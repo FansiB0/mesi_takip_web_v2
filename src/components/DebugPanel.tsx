@@ -15,7 +15,7 @@ const DebugPanel: React.FC = () => {
     
     try {
       // Test 1: Basic connection
-      const { data, error } = await supabase.from('users').select('*').limit(1);
+      const { error } = await supabase.from('users').select('*').limit(1);
       
       if (error) {
         setTestResult(prev => prev + `❌ Connection Error: ${error.message}\n`);
@@ -77,8 +77,8 @@ const DebugPanel: React.FC = () => {
     try {
       const testSalary = {
         userId: user.id,
-        month: '2024-01',
-        year: '2024',
+        month: 1,
+        year: 2024,
         grossSalary: 10000,
         netSalary: 8000,
         bonus: 1000,
@@ -146,6 +146,8 @@ const DebugPanel: React.FC = () => {
         startDate: '2024-01-20',
         endDate: '2024-01-22',
         type: 'annual' as const,
+        leaveType: 'annual' as const,
+        daysUsed: 3,
         reason: 'Test leave',
         status: 'pending' as const
       };
@@ -207,13 +209,77 @@ const DebugPanel: React.FC = () => {
     }
   };
 
+  const comprehensiveDataTest = async () => {
+    if (!user) {
+      setTestResult('❌ User not authenticated');
+      return;
+    }
+
+    setIsLoading(true);
+    setTestResult('🧪 KAPSAMLI VERİ TESTİ BAŞLIYOR...\n\n');
+
+    try {
+      // Test 1: Settings
+      setTestResult(prev => prev + '1️⃣ Settings Test...\n');
+      await testSettings();
+      
+      // Test 2: Salary
+      setTestResult(prev => prev + '\n2️⃣ Salary Test...\n');
+      await testAddSalary();
+      
+      // Test 3: Overtime
+      setTestResult(prev => prev + '\n3️⃣ Overtime Test...\n');
+      await testAddOvertime();
+      
+      // Test 4: Leave
+      setTestResult(prev => prev + '\n4️⃣ Leave Test...\n');
+      await testAddLeave();
+
+      // Test 5: Verify all data in database
+      setTestResult(prev => prev + '\n5️⃣ Veritabanı Doğrulama...\n');
+      
+      const { data: salaryData } = await supabase
+        .from('salary_records')
+        .select('*')
+        .eq('user_id', user.id);
+      
+      const { data: overtimeData } = await supabase
+        .from('overtime')
+        .select('*')
+        .eq('user_id', user.id);
+      
+      const { data: leaveData } = await supabase
+        .from('leaves')
+        .select('*')
+        .eq('user_id', user.id);
+      
+      const { data: settingsData } = await supabase
+        .from('user_settings')
+        .select('*')
+        .eq('user_id', user.id);
+
+      setTestResult(prev => prev + `✅ Salary Records: ${salaryData?.length || 0}\n`);
+      setTestResult(prev => prev + `✅ Overtime Records: ${overtimeData?.length || 0}\n`);
+      setTestResult(prev => prev + `✅ Leave Records: ${leaveData?.length || 0}\n`);
+      setTestResult(prev => prev + `✅ Settings Records: ${settingsData?.length || 0}\n`);
+
+      setTestResult(prev => prev + '\n🎉 KAPSAMLI TEST TAMAMLANDI!\n');
+      setTestResult(prev => prev + '📊 Tüm veriler başarıyla kaydedildi!\n');
+
+    } catch (error: any) {
+      setTestResult(prev => prev + `❌ Comprehensive test failed: ${error.message}\n`);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const clearTestData = async () => {
     setIsLoading(true);
     setTestResult('Clearing test data...\n');
 
     try {
       // Clear test data (only if user is admin)
-      if (user?.role === 'admin') {
+      if (user?.employeeType === 'admin') {
         const { error } = await supabase
           .from('salary_records')
           .delete()
@@ -238,55 +304,63 @@ const DebugPanel: React.FC = () => {
     <div className="bg-gray-100 p-6 rounded-lg border">
       <h2 className="text-xl font-bold mb-4">🔧 Debug Panel</h2>
       
-             <div className="grid grid-cols-3 gap-4 mb-4">
-         <button
-           onClick={testSupabaseConnection}
-           disabled={isLoading}
-           className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 disabled:opacity-50"
-         >
-           Test Connection
-         </button>
-         
-         <button
-           onClick={testSettings}
-           disabled={isLoading || !user}
-           className="bg-orange-500 text-white px-4 py-2 rounded hover:bg-orange-600 disabled:opacity-50"
-         >
-           Test Settings
-         </button>
-         
-         <button
-           onClick={testAddSalary}
-           disabled={isLoading || !user}
-           className="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600 disabled:opacity-50"
-         >
-           Test Add Salary
-         </button>
-         
-         <button
-           onClick={testAddOvertime}
-           disabled={isLoading || !user}
-           className="bg-yellow-500 text-white px-4 py-2 rounded hover:bg-yellow-600 disabled:opacity-50"
-         >
-           Test Add Overtime
-         </button>
-         
-         <button
-           onClick={testAddLeave}
-           disabled={isLoading || !user}
-           className="bg-purple-500 text-white px-4 py-2 rounded hover:bg-purple-600 disabled:opacity-50"
-         >
-           Test Add Leave
-         </button>
-         
-         <button
-           onClick={clearTestData}
-           disabled={isLoading}
-           className="bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600 disabled:opacity-50"
-         >
-           Clear Test Data
-         </button>
-       </div>
+      <div className="grid grid-cols-3 gap-4 mb-4">
+        <button
+          onClick={testSupabaseConnection}
+          disabled={isLoading}
+          className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 disabled:opacity-50"
+        >
+          Test Connection
+        </button>
+        
+        <button
+          onClick={comprehensiveDataTest}
+          disabled={isLoading || !user}
+          className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 disabled:opacity-50 font-bold"
+        >
+          🧪 Kapsamlı Test
+        </button>
+        
+        <button
+          onClick={testSettings}
+          disabled={isLoading || !user}
+          className="bg-orange-500 text-white px-4 py-2 rounded hover:bg-orange-600 disabled:opacity-50"
+        >
+          Test Settings
+        </button>
+        
+        <button
+          onClick={testAddSalary}
+          disabled={isLoading || !user}
+          className="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600 disabled:opacity-50"
+        >
+          Test Add Salary
+        </button>
+        
+        <button
+          onClick={testAddOvertime}
+          disabled={isLoading || !user}
+          className="bg-yellow-500 text-white px-4 py-2 rounded hover:bg-yellow-600 disabled:opacity-50"
+        >
+          Test Add Overtime
+        </button>
+        
+        <button
+          onClick={testAddLeave}
+          disabled={isLoading || !user}
+          className="bg-purple-500 text-white px-4 py-2 rounded hover:bg-purple-600 disabled:opacity-50"
+        >
+          Test Add Leave
+        </button>
+        
+        <button
+          onClick={clearTestData}
+          disabled={isLoading}
+          className="bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600 disabled:opacity-50"
+        >
+          Clear Test Data
+        </button>
+      </div>
 
       <div className="mb-4">
         <h3 className="font-semibold mb-2">Current Data Count:</h3>

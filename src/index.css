@@ -113,3 +113,56 @@
 .card {
   @apply bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6;
 }
+
+/* Theme and appearance styles */
+.text-sm {
+  font-size: 0.875rem;
+}
+
+.text-base {
+  font-size: 1rem;
+}
+
+.text-lg {
+  font-size: 1.125rem;
+}
+
+/* Color schemes */
+.scheme-blue {
+  --primary-color: #3b82f6;
+  --primary-hover: #2563eb;
+}
+
+.scheme-green {
+  --primary-color: #10b981;
+  --primary-hover: #059669;
+}
+
+.scheme-purple {
+  --primary-color: #8b5cf6;
+  --primary-hover: #7c3aed;
+}
+
+.scheme-orange {
+  --primary-color: #f59e0b;
+  --primary-hover: #d97706;
+}
+
+/* Compact mode */
+.compact-mode .card {
+  @apply p-4;
+}
+
+.compact-mode .space-y-6 > * + * {
+  margin-top: 1rem;
+}
+
+.compact-mode .space-y-4 > * + * {
+  margin-top: 0.75rem;
+}
+
+/* No animations */
+.no-animations * {
+  animation-duration: 0s !important;
+  transition-duration: 0s !important;
+}

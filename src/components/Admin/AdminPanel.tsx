@@ -15,9 +15,7 @@ import {
   UserX,
   FileText,
   Filter,
-  Calendar,
   AlertTriangle,
-  Info,
   Clock,
   BarChart3
 } from 'lucide-react';
@@ -26,6 +24,7 @@ import { useData } from '../../contexts/DataContext';
 import { useToast } from '../../contexts/ToastContext';
 import { userProfileService } from '../../services/userProfileService';
 import { logService, LogEntry, LogLevel, LogCategory } from '../../services/logService';
+import DebugPanel from '../DebugPanel';
 
 interface AdminPanelProps {
   onClose: () => void;
@@ -45,11 +44,11 @@ interface AdminUser {
 }
 
 const AdminPanel: React.FC<AdminPanelProps> = ({ onClose }) => {
-  const { user } = useAuth();
+  const { user, reloadUser } = useAuth();
   const { salaries, overtimes, leaves, holidays, refreshData } = useData();
   const { showSuccess, showError, showWarning } = useToast();
   
-  const [activeTab, setActiveTab] = useState<'overview' | 'users' | 'data' | 'logs'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'users' | 'data' | 'logs' | 'debug'>('overview');
   const [showPasswords, setShowPasswords] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [allUsers, setAllUsers] = useState<AdminUser[]>([]);
@@ -79,7 +78,8 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onClose }) => {
           name: user.name || 'İsimsiz Kullanıcı',
           email: user.email || '',
           password: user.password || 'Şifre bilgisi mevcut değil',
-          employeeType: user.employeeType || 'normal',
+          role: user.role || 'user', // Role alanı eklendi
+          employeeType: user.employee_type || user.employeeType || 'normal', // employee_type kolonunu kontrol et
           department: user.department || '',
           position: user.position || '',
           isActive: user.isActive !== undefined ? user.isActive : true, // Varsayılan olarak aktif
@@ -211,15 +211,20 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onClose }) => {
           // Kullanıcıyı admin yap
           await userProfileService.updateUserRole(userId, 'admin');
           setAllUsers(prev => prev.map(u => 
-            u.id === userId ? { ...u, employeeType: 'admin' } : u
+            u.id === userId ? { ...u, role: 'admin', employeeType: 'admin' } : u
           ));
           showSuccess('Kullanıcı admin yetkisi verildi');
+          
+          // Eğer değiştirilen kullanıcı şu anki kullanıcı ise yeniden yükle
+          if (userId === user?.id) {
+            await reloadUser();
+          }
           break;
         case 'makeManager':
           // Kullanıcıyı yönetici yap
           await userProfileService.updateUserRole(userId, 'manager');
           setAllUsers(prev => prev.map(u => 
-            u.id === userId ? { ...u, employeeType: 'manager' } : u
+            u.id === userId ? { ...u, role: 'user', employeeType: 'manager' } : u
           ));
           showSuccess('Kullanıcı yönetici yetkisi verildi');
           break;
@@ -227,7 +232,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onClose }) => {
           // Kullanıcıyı normal çalışan yap
           await userProfileService.updateUserRole(userId, 'normal');
           setAllUsers(prev => prev.map(u => 
-            u.id === userId ? { ...u, employeeType: 'normal' } : u
+            u.id === userId ? { ...u, role: 'user', employeeType: 'normal' } : u
           ));
           showSuccess('Kullanıcı normal çalışan yapıldı');
           break;
@@ -355,6 +360,17 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onClose }) => {
           >
             <FileText className="h-4 w-4 inline mr-2" />
             Sistem Logları
+          </button>
+          <button
+            onClick={() => setActiveTab('debug')}
+            className={`px-6 py-3 text-sm font-medium border-b-2 transition-colors ${
+              activeTab === 'debug'
+                ? 'border-blue-500 text-blue-600'
+                : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200'
+            }`}
+          >
+            <AlertTriangle className="h-4 w-4 inline mr-2" />
+            Debug Panel
           </button>
         </div>
 
@@ -544,13 +560,13 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onClose }) => {
                               </td>
                               <td className="px-6 py-4 whitespace-nowrap">
                                 <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                                  user.employeeType === 'admin' 
+                                  user.role === 'admin' || user.employeeType === 'admin'
                                     ? 'bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-400'
                                     : user.employeeType === 'manager'
                                     ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/20 dark:text-yellow-400'
                                     : 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400'
                                 }`}>
-                                  {user.employeeType === 'admin' ? 'Admin' : 
+                                  {user.role === 'admin' || user.employeeType === 'admin' ? 'Admin' : 
                                    user.employeeType === 'manager' ? 'Yönetici' : 'Kullanıcı'}
                                 </span>
                               </td>
@@ -944,6 +960,20 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onClose }) => {
                     </table>
                   </div>
                 )}
+              </div>
+            </div>
+          )}
+
+          {activeTab === 'debug' && (
+            <div className="space-y-6">
+              <div className="bg-white dark:bg-gray-700 rounded-lg shadow p-6">
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+                  🛠️ Debug Panel - Sadece Adminler
+                </h3>
+                <p className="text-gray-600 dark:text-gray-400 mb-6">
+                  Bu panel sadece admin kullanıcılar tarafından erişilebilir. Supabase bağlantısını test edebilir ve veri kaydetme işlemlerini debug edebilirsiniz.
+                </p>
+                <DebugPanel />
               </div>
             </div>
           )}

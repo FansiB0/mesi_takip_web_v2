@@ -1,6 +1,15 @@
 -- Geçici RLS Bypass (Test için)
 -- Bu dosyayı Supabase SQL Editor'de çalıştırın
 
+-- 0. Önce update_updated_at_column fonksiyonunu oluştur
+CREATE OR REPLACE FUNCTION update_updated_at_column()
+RETURNS TRIGGER AS $$
+BEGIN
+    NEW.updated_at = NOW();
+    RETURN NEW;
+END;
+$$ language 'plpgsql';
+
 -- 1. RLS'yi geçici olarak devre dışı bırak
 ALTER TABLE users DISABLE ROW LEVEL SECURITY;
 ALTER TABLE user_settings DISABLE ROW LEVEL SECURITY;
