@@ -4,8 +4,12 @@ import react from '@vitejs/plugin-react';
 // https://vitejs.dev/config/
 export default defineConfig({
   plugins: [react()],
-  // Vercel ve GitHub Pages için dinamik base path
-  base: process.env.VERCEL ? '/' : process.env.NODE_ENV === 'production' ? '/mesi_takip_web_v2/' : '/',
+  // Dinamik base path: Vercel için '/', GitHub Pages için repo adı
+  base: process.env.VERCEL || process.env.DEPLOYMENT_TARGET === 'vercel' 
+    ? '/' 
+    : process.env.DEPLOYMENT_TARGET === 'github' || process.env.NODE_ENV === 'production' 
+    ? '/mesi_takip_web_v2/' 
+    : '/',
   optimizeDeps: {
     exclude: ['lucide-react'],
   },

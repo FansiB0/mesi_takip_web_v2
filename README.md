@@ -225,22 +225,58 @@ src/
 
 ## 🚀 Deployment
 
-### Vercel
+Bu proje hem **GitHub Pages** hem de **Vercel** platformlarında aynı anda yayınlanabilir.
+
+### 🔄 Otomatik Deployment
+
+**GitHub Pages** (Otomatik):
+- `main` branch'e her push'ta otomatik deploy
+- GitHub Actions workflow ile yapılır
+- URL: `https://fansib0.github.io/mesi_takip_web_v2/`
+
+**Vercel** (Manuel veya Otomatik):
+- Vercel hesabınıza GitHub repo'yu bağlayın
+- Otomatik deploy için Vercel dashboard'dan ayarlayın
+
+### 📝 Manuel Deployment Komutları
+
 ```bash
-npm run build
-vercel --prod
+# Sadece GitHub Pages
+npm run deploy:github
+
+# Sadece Vercel
+npm run deploy:vercel
+
+# Her ikisi birden
+npm run deploy:all
+
+# Platform özel build'ler
+npm run build:github    # GitHub Pages için
+npm run build:vercel    # Vercel için
 ```
+
+### 🛠️ Platform Özel Ayarlar
+
+**GitHub Pages:**
+- Base path: `/mesi_takip_web_v2/`
+- Environment: `DEPLOYMENT_TARGET=github`
+
+**Vercel:**
+- Base path: `/`
+- Environment: `DEPLOYMENT_TARGET=vercel`
+- Otomatik HTTPS ve CDN
+
+### 📋 Deployment Checklist
+
+1. ✅ Environment variables'ları platform'da ayarlayın
+2. ✅ Supabase URL ve API key'leri ekleyin
+3. ✅ Domain ayarlarını yapın (opsiyonel)
+4. ✅ CORS ayarlarını Supabase'de güncelleyin
 
 ### Netlify
 ```bash
 npm run build
 # netlify.toml dosyası mevcut - drag & drop ile deploy edilebilir
-```
-
-### Manual Deployment
-```bash
-npm run build
-# dist/ klasöründeki dosyaları statik hosting servisine yükleyin
 ```
 
 ## 🤝 Katkıda Bulunma
