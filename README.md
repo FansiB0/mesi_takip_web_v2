@@ -29,6 +29,17 @@ Modern, güvenli ve kullanıcı dostu bir maaş ve çalışma takip uygulaması.
 - **Raporlama**: Detaylı analiz ve raporlar
 - **Hesaplayıcılar**: Tazminat ve maaş hesaplayıcıları
 
+### 🎨 Uygulama İçi Görüntüler
+<img width="1915" height="937" alt="Ekran görüntüsü 2025-08-09 184444" src="https://github.com/user-attachments/assets/e6fcda13-215b-4c1b-8f85-73e4a5c59232" />
+<img width="1919" height="940" alt="Ekran görüntüsü 2025-08-09 184428" src="https://github.com/user-attachments/assets/039a4913-2f9e-4e56-b5e4-c8dfe7f12365" />
+<img width="1909" height="935" alt="Ekran görüntüsü 2025-08-09 184411" src="https://github.com/user-attachments/assets/73fa0919-15cd-46bb-98c5-9b54fc153d93" />
+<img width="1899" height="931" alt="Ekran görüntüsü 2025-08-09 184346" src="https://github.com/user-attachments/assets/3babf144-c058-4eb1-88b1-291d91e96137" />
+<img width="1917" height="940" alt="Ekran görüntüsü 2025-08-09 184318" src="https://github.com/user-attachments/assets/47f047fd-d57d-4849-949f-7a0b7104ed6b" />
+<img width="1917" height="938" alt="Ekran görüntüsü 2025-08-09 184252" src="https://github.com/user-attachments/assets/1a0b1025-c755-4432-ab00-052e4e6ee92d" />
+<img width="1901" height="915" alt="Ekran görüntüsü 2025-08-09 184223" src="https://github.com/user-attachments/assets/7904c054-d056-49fb-94e1-3b1ccb4ec6e4" />
+<img width="1914" height="936" alt="Ekran görüntüsü 2025-08-09 184507" src="https://github.com/user-attachments/assets/debfc0fb-689f-49f3-9e25-7e8d9c9d72d8" />
+
+
 ### 🔒 Güvenlik Özellikleri
 - **Gelişmiş Hata Yönetimi**: Kapsamlı hata yakalama ve kullanıcı dostu mesajlar
 - **Form Validasyonu**: Kapsamlı input doğrulama ve sanitization
